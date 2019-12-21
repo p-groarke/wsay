@@ -1,0 +1,45 @@
+image:
+  - Visual Studio 2017
+  - Visual Studio 2019
+platform:
+  - x64
+  - Win32
+configuration:
+  - Debug
+  - Release
+clone_folder: c:\projects\fea_flat_recurse
+install:
+  - cmd: set PATH=%PATH%;%PYTHON%/Scripts/
+  - cmd: pip.exe install conan
+  - cmd: cd ..
+  - cmd: conan user
+  - cmd: conan --version
+  - cmd: conan remote add bincrafters https://api.bintray.com/conan/conan/conan-center
+  - cmd: conan profile new default --detect
+  - cmd: cd c:\projects\fea_flat_recurse
+build:
+  project: c:\projects\fea_flat_recurse\build\fea_flat_recurse.sln
+  parallel: true
+test_script:
+  - cmd: c:\projects\fea_flat_recurse\build\bin\fea_flat_recurse_tests.exe
+for:
+  -
+    matrix:
+      only:
+        - platform: x64
+    before_build:
+      - cmd: conan profile update settings.arch="x86_64" default
+      - cmd: cd c:\projects\fea_flat_recurse
+      - cmd: mkdir build
+      - cmd: cd build
+      - cmd: cmake .. -A %PLATFORM% -DBUILD_TESTING=On
+  -
+    matrix:
+      only:
+        - platform: Win32
+    before_build:
+      - cmd: conan profile update settings.arch="x86" default
+      - cmd: cd c:\projects\fea_flat_recurse
+      - cmd: mkdir build
+      - cmd: cd build
+      - cmd: cmake .. -A %PLATFORM% -DBUILD_TESTING=On

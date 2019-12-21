@@ -1,0 +1,13 @@
+[requires]
+gtest/1.10.0@_/_
+
+[generators]
+cmake_multi
+
+[options]
+gtest:build_gmock=False
+
+[imports]
+bin, *.pdb -> ./bin
+bin, *.pdb -> ./lib
+bin, *.dll -> ./bin

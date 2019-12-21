@@ -1,0 +1,5 @@
+cmake_minimum_required (VERSION 3.10)
+project(conan-setup NONE)
+
+execute_process(COMMAND conan install ${CMAKE_CURRENT_SOURCE_DIR} --build missing -s build_type=Debug)
+execute_process(COMMAND conan install ${CMAKE_CURRENT_SOURCE_DIR} --build missing -s build_type=Release)
