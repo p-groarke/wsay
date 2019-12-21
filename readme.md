@@ -2,6 +2,8 @@
 
 Windows equivalent of macOS `say`.
 
+Simple command line text-to-speech with easy file output and voice selection.
+
 ## Install Instructions
 - Copy `wsay.exe` to a folder you like.
 - Add that folder to your `Path` environment variable.
