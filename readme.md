@@ -33,7 +33,7 @@ wsay --list_voices
 	4 : Microsoft David - English (United States)
 	5 : Microsoft James - English (Australia)
 	6 : Microsoft Linda - English (Canada)
-etc.
+	etc.
 
 wsay "I can use different voices." --voice 6
 
