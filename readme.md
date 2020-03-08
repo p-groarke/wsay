@@ -50,7 +50,7 @@ wsay "You can name the ouput file." -o my_output_file.wav
 wsay -i i_can_read_a_text_file.txt
 
 # In interactive mode, type sentences and press enter for them to be read.
-# Use !exit to quite.
+# Use !exit to quit.
 # Use !stop to stop speaking.
 wsay --interactive
 [Info] Type sentences, press enter to speak them.
@@ -93,7 +93,7 @@ Options:
  -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
  -o, --output_file <optional>      Outputs to wav file. Uses 'out.wav' if no filename is provided.
  -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
-                                   Use 'ctrl+c' to exit, or type '!exit' (without quotes).
+                                   Use 'ctrl+c' or type '!exit' to quit.
  -d, --list_devices                List detected playback devices.
  -p, --playback_device <multiple>  Specify a playback device. Use the number provided by --list_devices.
                                    You can provide more than 1 playback device, seperate the numbers with spaces.
