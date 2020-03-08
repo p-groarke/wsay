@@ -11,6 +11,8 @@ Simple command line text-to-speech with easy file output, voice selection and mo
 - Supports speech xml.
 - Play text file.
 - Interactive mode.
+- Supports selecting playback device.
+- Supports multiple simultaneous playback devices and file output.
 
 
 ## Install Instructions
@@ -21,11 +23,14 @@ Simple command line text-to-speech with easy file output, voice selection and mo
 
 ## Examples
 
-```
+```bash
+# Say something.
 wsay "Hello there."
 
-wsay "I can output to a wav file (out.wav)." -o
+# Ouput to a wav file. If no filename is entered, outputs to 'out.wav'.
+wsay "I can output to a wav file." -o
 
+# List supported voices. Install new Windows voices for more choices.
 wsay --list_voices
 	1 : Microsoft David Desktop - English (United States)
 	2 : Microsoft Hazel Desktop - English (Great Britain)
@@ -33,18 +38,45 @@ wsay --list_voices
 	4 : Microsoft David - English (United States)
 	5 : Microsoft James - English (Australia)
 	6 : Microsoft Linda - English (Canada)
-	etc.
+	# etc.
 
+# Use the number provided by '--list_voices' to select a different voice.
 wsay "I can use different voices." --voice 6
 
+# Provide an output filename.
 wsay "You can name the ouput file." -o my_output_file.wav
 
+# Read text from a text file instead.
 wsay -i i_can_read_a_text_file.txt
 
+# In interactive mode, type sentences and press enter for them to be read.
+# Use !exit to quite.
+# Use !stop to stop speaking.
 wsay --interactive
-	[Enters an interactive mode. Type sentences and press enter to speak them. Type !exit to leave.]
+[Info] Type sentences, press enter to speak them.
+[Command] '!exit' : Exit interactive mode.
+[Command] '!stop' : Interrupt speaking.
 
+# List supported playback devices.
+wsay --list_devices
+	1 : BenQ GW2765 (NVIDIA High Definition Audio)
+	2 : Speakers (AudioQuest DragonFly Black v1.5)
+	3 : Digital Audio (S/PDIF) (High Definition Audio Device)
+	# etc.
+
+# Speak using a non-default playback device.
+wsay "I am speaking on another playback device." --playback_device 2
+
+# You can play on multiple devices and save to a file simultaneously.
+# Seperate the device numbers with spaces.
+# WARNING : The "sentence" must come before the --playback_device (-p) option if it is used!
+wsay "Output EVERYWHERE \o/" -p 1 2 -o
+
+# Here, we are using voice 6, reading text from a file and outputting to 'output.wav'.
 wsay -v 6 -i mix_and_match_options.txt -o output.wav
+
+# Ouput to multiple devices using interactive mode with voice 5.
+wsay -v 5 -I -p 1 2
 ```
 
 
@@ -56,13 +88,17 @@ Arguments:
  "sentence"    Sentence to say. You can use speech xml.
 
 Options:
- -v, --voice <value>           Choose a different voice. Use the voice number printed using --list_voices.
- -o, --output_file <optional>  Outputs to wav file. Uses 'out.wav' if no filename is provided.
- -l, --list_voices             Lists available voices.
- -i, --input_text <value>      Play text from '.txt' file. Supports speech xml.
- -I, --interactive             Enter interactive mode. Type sentences, they will be spoken when you press enter.
-                               Use 'ctrl+c' to exit, or type '!exit' (without quotes).
- -h, --help                    Print this help
+ -l, --list_voices                 Lists available voices.
+ -v, --voice <value>               Choose a different voice. Use the voice number printed using --list_voices.
+ -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
+ -o, --output_file <optional>      Outputs to wav file. Uses 'out.wav' if no filename is provided.
+ -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
+                                   Use 'ctrl+c' to exit, or type '!exit' (without quotes).
+ -d, --list_devices                List detected playback devices.
+ -p, --playback_device <multiple>  Specify a playback device. Use the number provided by --list_devices.
+                                   You can provide more than 1 playback device, seperate the numbers with spaces.
+                                   You can also mix output to file + playback.
+ -h, --help                        Print this help
 ```
 
 ## Build

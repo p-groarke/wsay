@@ -1,7 +1,7 @@
 cmake_policy(SET CMP0091 NEW)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.conan.txt)
 cmake_minimum_required (VERSION 3.10)
-project(wsay VERSION 1.1.0 LANGUAGES CXX)
+project(wsay VERSION 1.2.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
