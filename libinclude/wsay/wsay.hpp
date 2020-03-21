@@ -15,6 +15,11 @@ struct voice {
 	voice();
 	~voice();
 
+	voice(const voice&);
+	voice(voice&&);
+	voice& operator=(const voice&);
+	voice& operator=(voice&&);
+
 	// Selection of voices. Use these indexes to select voices.
 	size_t available_voices_size() const;
 	std::vector<std::wstring> available_voices() const;

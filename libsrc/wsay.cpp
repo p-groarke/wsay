@@ -20,6 +20,7 @@ namespace wsy {
 namespace {
 using unique_couninitialize_call
 		= wil::unique_call<decltype(&::CoUninitialize), ::CoUninitialize>;
+unique_couninitialize_call cleanup;
 
 std::wstring new_win10_registrykey
 		= L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_"
@@ -110,12 +111,7 @@ void setup_fileout(CComPtr<ISpVoice>& voice,
 		std::exit(-1);
 	}
 
-	std::wstring fileout;
-	if (!output_filepath.empty()) {
-		fileout = output_filepath.wstring();
-	} else {
-		fileout = (std::filesystem::current_path() / L"out.wav").wstring();
-	}
+	std::wstring fileout = output_filepath.wstring();
 
 	if (!SUCCEEDED(SPBindToFile(fileout.c_str(), SPFM_CREATE_ALWAYS, &cpStream,
 				&cAudioFmt.FormatId(), cAudioFmt.WaveFormatExPtr()))) {
@@ -175,6 +171,9 @@ bool parse_text_file(
 
 struct voice_impl {
 	voice_impl() {
+		THROW_IF_FAILED_MSG(::CoInitializeEx(nullptr, COINIT_MULTITHREADED),
+				"Couldn't initialize COM.\n");
+
 		available_voices = get_voices(SPCAT_VOICES);
 		{
 			std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
@@ -188,7 +187,6 @@ struct voice_impl {
 		voices.push_back(create_voice());
 	}
 
-	unique_couninitialize_call cleanup;
 	std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
 			available_voices;
 	std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
@@ -201,11 +199,32 @@ struct voice_impl {
 
 voice::voice()
 		: _impl(std::make_unique<voice_impl>()) {
-
-	THROW_IF_FAILED_MSG(::CoInitializeEx(nullptr, COINIT_MULTITHREADED),
-			"Couldn't initialize COM.\n");
 }
 voice::~voice() = default;
+
+voice::voice(const voice& other)
+		: _impl(std::make_unique<voice_impl>(*other._impl)) {
+}
+voice::voice(voice&& other)
+		: _impl(std::make_unique<voice_impl>(std::move(*other._impl))) {
+}
+
+voice& voice::operator=(const voice& other) {
+	if (this == &other) {
+		return *this;
+	}
+
+	*_impl = *other._impl;
+	return *this;
+}
+voice& voice::operator=(voice&& other) {
+	if (this == &other) {
+		return *this;
+	}
+
+	*_impl = std::move(*other._impl);
+	return *this;
+}
 
 size_t voice::available_voices_size() const {
 	return _impl->available_voices.size();
@@ -241,6 +260,10 @@ void voice::add_file_output(const std::filesystem::path& path) {
 	if (_impl->contains_default_voice) {
 		_impl->voices.clear();
 		_impl->contains_default_voice = false;
+	}
+
+	if (path.empty()) {
+		throw std::runtime_error{ "voice : Ouput filepath is empty." };
 	}
 
 	_impl->voices.push_back(create_voice());
