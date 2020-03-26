@@ -13,6 +13,7 @@ extern CComModule _Module;
 
 #include <algorithm>
 #include <fea_utils/fea_utils.hpp>
+#include <functional>
 #include <wil/resource.h>
 #include <wil/result.h>
 
@@ -93,37 +94,6 @@ get_playback_devices() {
 	return ret;
 }
 
-CComPtr<ISpVoice> create_voice() {
-	CComPtr<ISpVoice> ret;
-	if (!SUCCEEDED(ret.CoCreateInstance(CLSID_SpVoice))) {
-		fprintf(stderr, "Couldn't initialize voice.\n");
-		std::exit(-1);
-	}
-	return ret;
-}
-
-void setup_fileout(CComPtr<ISpVoice>& voice,
-		const std::filesystem::path& output_filepath) {
-	CComPtr<ISpStream> cpStream;
-	CSpStreamFormat cAudioFmt;
-	if (!SUCCEEDED(cAudioFmt.AssignFormat(SPSF_44kHz16BitMono))) {
-		fprintf(stderr, "Couldn't set audio format (44kHz, 16bit, mono).\n");
-		std::exit(-1);
-	}
-
-	std::wstring fileout = output_filepath.wstring();
-
-	if (!SUCCEEDED(SPBindToFile(fileout.c_str(), SPFM_CREATE_ALWAYS, &cpStream,
-				&cAudioFmt.FormatId(), cAudioFmt.WaveFormatExPtr()))) {
-		fprintf(stderr, "Couldn't bind stream to file.\n");
-		std::exit(-1);
-	}
-
-	if (!SUCCEEDED(voice->SetOutput(cpStream, TRUE))) {
-		fprintf(stderr, "Couldn't set voice output.\n");
-		std::exit(-1);
-	}
-}
 
 } // namespace
 
@@ -168,6 +138,60 @@ bool parse_text_file(
 	return true;
 }
 
+struct voice_data {
+	// Creates default voice.
+	voice_data(ISpObjectToken* selected_voice) {
+		if (!SUCCEEDED(voice_ptr.CoCreateInstance(CLSID_SpVoice))) {
+			throw std::runtime_error{ "Couldn't initialize voice." };
+		}
+
+		voice_ptr->SetVoice(selected_voice);
+	}
+
+	// Creates file out voice.
+	voice_data(ISpObjectToken* selected_voice,
+			const std::filesystem::path& filepath)
+			: voice_data(selected_voice) {
+		path = filepath;
+
+		CComPtr<ISpStream> cpStream;
+		CSpStreamFormat cAudioFmt;
+		if (!SUCCEEDED(cAudioFmt.AssignFormat(SPSF_44kHz16BitMono))) {
+			throw std::runtime_error{
+				"Couldn't set audio format (44kHz, 16bit, mono)."
+			};
+		}
+
+		std::wstring fileout = path.wstring();
+
+		if (!SUCCEEDED(SPBindToFile(fileout.c_str(), SPFM_CREATE_ALWAYS,
+					&cpStream, &cAudioFmt.FormatId(),
+					cAudioFmt.WaveFormatExPtr()))) {
+			throw std::runtime_error{ "Couldn't bind stream to file." };
+		}
+
+		if (!SUCCEEDED(voice_ptr->SetOutput(cpStream, TRUE))) {
+			throw std::runtime_error{ "Couldn't set voice output." };
+		}
+	}
+
+	voice_data(ISpObjectToken* selected_voice, size_t device_idx,
+			ISpObjectToken* device)
+			: voice_data(selected_voice) {
+
+		device_playback_idx = device_idx;
+		voice_ptr->SetOutput(device, TRUE);
+	}
+
+	bool is_default() const {
+		return device_playback_idx == std::numeric_limits<size_t>::max()
+				&& path.empty();
+	}
+
+	CComPtr<ISpVoice> voice_ptr;
+	size_t device_playback_idx = std::numeric_limits<size_t>::max();
+	std::filesystem::path path;
+};
 
 struct voice_impl {
 	voice_impl() {
@@ -184,7 +208,22 @@ struct voice_impl {
 
 		available_devices = get_playback_devices();
 
-		voices.push_back(create_voice());
+		voices.push_back({ nullptr });
+	}
+
+	template <class Func>
+	void execute(Func func) {
+		if (voices.size() == 1) {
+			std::invoke(func, voices.back().voice_ptr);
+			return;
+		}
+
+		for (voice_data& v : voices) {
+			if (v.is_default()) {
+				continue;
+			}
+			std::invoke(func, v.voice_ptr);
+		}
 	}
 
 	std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
@@ -192,8 +231,8 @@ struct voice_impl {
 	std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
 			available_devices;
 
-	std::vector<CComPtr<ISpVoice>> voices;
-	bool contains_default_voice = true;
+	std::vector<voice_data> voices;
+	size_t selected_voice = 0;
 };
 
 
@@ -256,70 +295,98 @@ std::vector<std::wstring> voice::available_devices() const {
 	return ret;
 }
 
-void voice::add_file_output(const std::filesystem::path& path) {
-	if (_impl->contains_default_voice) {
-		_impl->voices.clear();
-		_impl->contains_default_voice = false;
-	}
-
+void voice::start_file_output(const std::filesystem::path& path) {
 	if (path.empty()) {
-		throw std::runtime_error{ "voice : Ouput filepath is empty." };
+		throw std::invalid_argument{ "voice : Ouput filepath is empty." };
 	}
 
-	_impl->voices.push_back(create_voice());
-	setup_fileout(_impl->voices.back(), path);
+	_impl->voices.push_back(
+			{ _impl->available_voices[_impl->selected_voice].second, path });
 }
 
-void voice::add_device_playback(size_t device_idx) {
+void voice::stop_file_output() {
+	auto it = std::find_if(_impl->voices.begin(), _impl->voices.end(),
+			[&](const voice_data& v) { return !v.path.empty(); });
+
+	if (it == _impl->voices.end()) {
+		return;
+	}
+
+	_impl->voices.erase(it);
+}
+
+void voice::enable_device_playback(size_t device_idx) {
 	if (device_idx >= _impl->available_devices.size()) {
-		throw std::runtime_error{
+		throw std::out_of_range{
 			"voice : Selected device index out-of-range."
 		};
 	}
 
-	if (_impl->contains_default_voice) {
-		_impl->voices.clear();
-		_impl->contains_default_voice = false;
+	for (voice_data& v : _impl->voices) {
+		v.voice_ptr->Speak(
+				L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
 	}
 
-	_impl->voices.push_back(create_voice());
-	_impl->voices.back()->SetOutput(
-			_impl->available_devices[device_idx].second, TRUE);
+	_impl->voices.push_back(
+			{ _impl->available_voices[_impl->selected_voice].second, device_idx,
+					_impl->available_devices[device_idx].second });
+}
+
+void voice::disable_device_playback(size_t device_idx) {
+	if (device_idx >= _impl->available_devices.size()) {
+		throw std::out_of_range{
+			"voice : Selected device index out-of-range."
+		};
+	}
+
+	auto it = std::find_if(_impl->voices.begin(), _impl->voices.end(),
+			[&](const voice_data& v) {
+				return v.device_playback_idx == device_idx;
+			});
+
+	if (it == _impl->voices.end()) {
+		return;
+	}
+
+	it->voice_ptr->Speak(
+			L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
+	_impl->voices.erase(it);
 }
 
 void voice::select_voice(size_t voice_idx) {
 	if (voice_idx >= _impl->available_voices.size()) {
-		throw std::runtime_error{
-			"voice : Selected voice index out-of-range."
-		};
+		throw std::out_of_range{ "voice : Selected voice index out-of-range." };
 	}
 
-	for (CComPtr<ISpVoice>& voice : _impl->voices) {
-		voice->SetVoice(_impl->available_voices[voice_idx].second);
+	_impl->selected_voice = voice_idx;
+	for (voice_data& v : _impl->voices) {
+		v.voice_ptr->Speak(
+				L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
+		v.voice_ptr->SetVoice(
+				_impl->available_voices[_impl->selected_voice].second);
 	}
 }
 
 void voice::speak(const std::wstring& sentence) {
-	for (CComPtr<ISpVoice>& voice : _impl->voices) {
+	_impl->execute([&](CComPtr<ISpVoice>& voice) {
 		voice->Speak(sentence.c_str(), SPF_DEFAULT | SPF_ASYNC, nullptr);
-	}
+	});
 
-	for (CComPtr<ISpVoice>& voice : _impl->voices) {
-		voice->WaitUntilDone(INFINITE);
-	}
+	_impl->execute(
+			[&](CComPtr<ISpVoice>& voice) { voice->WaitUntilDone(INFINITE); });
 }
 
 void voice::speak_async(const std::wstring& sentence) {
-	for (CComPtr<ISpVoice>& voice : _impl->voices) {
+	_impl->execute([&](CComPtr<ISpVoice>& voice) {
 		voice->Speak(sentence.c_str(), SPF_DEFAULT | SPF_ASYNC, nullptr);
-	}
+	});
 }
 
 void voice::stop_speaking() {
-	for (CComPtr<ISpVoice>& voice : _impl->voices) {
+	_impl->execute([](CComPtr<ISpVoice>& voice) {
 		voice->Speak(
 				L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
-	}
+	});
 }
 
 } // namespace wsy

@@ -28,10 +28,12 @@ struct voice {
 	size_t available_devices_size() const;
 	std::vector<std::wstring> available_devices() const;
 
-	void add_file_output(const std::filesystem::path& path);
-	void add_device_playback(size_t device_idx);
+	void start_file_output(const std::filesystem::path& path);
+	void stop_file_output();
 
-	// Call this once all outputs have been added.
+	void enable_device_playback(size_t device_idx);
+	void disable_device_playback(size_t device_idx);
+
 	void select_voice(size_t voice_idx);
 
 	// Speaks the sentence using selected voice to playback outputs and file.

@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 						if (!f.empty()) {
 							filepath = { f };
 						}
-						voice.add_file_output(filepath);
+						voice.start_file_output(filepath);
 						return true;
 					},
 					"Outputs to wav file. Uses 'out.wav' if no filename is "
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 								return false;
 							}
 
-							voice.add_device_playback(chosen_device - 1);
+							voice.enable_device_playback(chosen_device - 1);
 						}
 
 						return true;

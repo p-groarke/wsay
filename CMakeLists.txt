@@ -1,6 +1,6 @@
 cmake_policy(SET CMP0091 NEW)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.conan.txt)
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.15)
 project(wsay VERSION 1.2.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
@@ -36,18 +36,6 @@ set(DEPENDENCY_FOLDER "Dependencies")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ${DEPENDENCY_FOLDER})
 
-# Static MSVC runtimes
-set(CompilerFlags
-	CMAKE_CXX_FLAGS
-	CMAKE_CXX_FLAGS_DEBUG
-	CMAKE_CXX_FLAGS_RELEASE
-	CMAKE_C_FLAGS
-	CMAKE_C_FLAGS_DEBUG
-	CMAKE_C_FLAGS_RELEASE
-)
-foreach(CompilerFlag ${CompilerFlags})
-	string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-endforeach()
 
 # Compile Options
 function(set_compile_options REQUIRED_ARG)
@@ -60,12 +48,13 @@ function(set_compile_options REQUIRED_ARG)
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		target_compile_definitions(${REQUIRED_ARG} PUBLIC NOMINMAX)
 		target_compile_options(${REQUIRED_ARG} PRIVATE /Zc:__cplusplus /Zc:alignedNew /permissive- /W4 /WX)
+		set_target_properties(${REQUIRED_ARG} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 	endif()
 endfunction()
 
 
 ##
-# libwsay
+# libwsay MT
 ##
 set(LIB_NAME lib${PROJECT_NAME})
 file(GLOB_RECURSE LIB_HEADERS "libinclude/*.hpp" "libinclude/*.h" "libinclude/*.tpp")
@@ -106,15 +95,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME})
 # wsay_gui
 ##
 find_package(nuklear CONFIG REQUIRED)
+find_package(glfw CONFIG REQUIRED)
+find_package(glad CONFIG REQUIRED)
 set(GUITOOL_NAME ${PROJECT_NAME}_gui)
 file(GLOB_RECURSE GUITOOL_SOURCES "src_gui/*.cpp" "src_gui/*.c" "src_gui/*.hpp" "src_gui/*.h" "src_gui/*.tpp")
-add_executable(${GUITOOL_NAME} ${GUITOOL_SOURCES})
+add_executable(${GUITOOL_NAME} WIN32 ${GUITOOL_SOURCES})
 target_include_directories(${GUITOOL_NAME} PRIVATE src_gui) # For based paths.
 target_include_directories(${GUITOOL_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
 set_compile_options(${GUITOOL_NAME})
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${GUITOOL_NAME})
 add_definitions(-DWSAY_VERSION="${PROJECT_VERSION}")
-target_link_libraries(${GUITOOL_NAME} PRIVATE ${LIB_NAME} nuklear::nuklear)
+target_link_libraries(${GUITOOL_NAME} PRIVATE ${LIB_NAME} nuklear::nuklear glfw::glfw glad::glad)
 
 
 ##
