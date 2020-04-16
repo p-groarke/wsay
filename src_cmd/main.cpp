@@ -1,13 +1,24 @@
-﻿#include <filesystem>
+﻿#include <fea_utils/fea_utils.hpp>
+#include <filesystem>
 #include <iostream>
 #include <ns_getopt/ns_getopt.h>
 #include <string>
+#include <windows.h>
 #include <wsay/wsay.hpp>
 
 const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
+// cmd only : Character support will be ok-ish for now.
+// TODO : abstract char type in ns_getopt and use wmain.
+//		Once I do that, we can also set :
+//		_setmode( _fileno( stdin ), _O_U8TEXT );
+//		and everything should be gucci.
 int main(int argc, char** argv) {
+	// Doesn't really do much for us, but set it anyways to make sure user cmd
+	// is in utf8 mode.
+	SetConsoleCP(CP_UTF8);
+
 	wsy::voice voice;
 
 	bool interactive_mode = false;
@@ -18,8 +29,8 @@ int main(int argc, char** argv) {
 			// clang-format
 			{ "\"sentence\"", opt::type::raw_arg,
 					[&](std::string_view f) {
-						// TEMP HACK, TODO : Support wide strings in ns_getopt.
-						speech_text = { f.begin(), f.end() };
+						std::string t = { f.begin(), f.end() };
+						speech_text = fea::current_codepage_to_utf16_w(t);
 						return true;
 					},
 					"Sentence to say. You can use speech xml." },

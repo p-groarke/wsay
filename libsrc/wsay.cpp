@@ -114,19 +114,14 @@ bool parse_text_file(
 		return false;
 	}
 
-	std::vector<std::wstring> sentences;
-	if (!fea::wopen_text_file(path, sentences)) {
+	std::ifstream ifs{ path };
+	if (!ifs.is_open()) {
 		return false;
 	}
 
-	for (const std::wstring& str : sentences) {
-		if (str.empty()) {
-			continue;
-		}
+	std::u32string text = fea::read_with_bom(ifs);
 
-		out_text += str;
-		out_text += '\n';
-	}
+	out_text = fea::utf32_to_utf16_w(text);
 
 	if (out_text.empty()) {
 		fprintf(stderr,

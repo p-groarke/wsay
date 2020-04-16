@@ -1,7 +1,7 @@
 cmake_policy(SET CMP0091 NEW)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.conan.txt)
 cmake_minimum_required (VERSION 3.15)
-project(wsay VERSION 1.3.0 LANGUAGES CXX)
+project(wsay VERSION 1.3.1 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -46,8 +46,8 @@ function(set_compile_options REQUIRED_ARG)
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 	  # using Intel C++
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-		target_compile_definitions(${REQUIRED_ARG} PUBLIC NOMINMAX)
-		target_compile_options(${REQUIRED_ARG} PRIVATE /Zc:__cplusplus /Zc:alignedNew /permissive- /W4 /WX)
+		target_compile_definitions(${REQUIRED_ARG} PUBLIC NOMINMAX _UNICODE)
+		target_compile_options(${REQUIRED_ARG} PRIVATE /Zc:__cplusplus /Zc:alignedNew /permissive- /W4 /WX /utf-8)
 		set_target_properties(${REQUIRED_ARG} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 	endif()
 endfunction()
@@ -89,6 +89,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
 set_compile_options(${PROJECT_NAME})
 add_definitions(-DWSAY_VERSION="${PROJECT_VERSION}")
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME})
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DWIN32_LEAN_AND_MEAN -DWIN32_EXTRA_LEAN -DVC_EXTRALEAN)
 
 
 ##
@@ -144,3 +145,33 @@ set_target_properties(ns_getopt_ext wil_ext fea_utils_ext PROPERTIES FOLDER ${DE
 add_dependencies(${PROJECT_NAME} ns_getopt_ext fea_utils_ext)
 add_dependencies(${GUITOOL_NAME} fea_utils_ext)
 add_dependencies(${LIB_NAME} wil_ext fea_utils_ext)
+
+
+# Tests
+option(BUILD_TESTING "Build and run tests." Off)
+if (${BUILD_TESTING})
+	enable_testing()
+	
+	set(TEST_NAME ${PROJECT_NAME}_tests)
+	file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp" "tests/*.c" "tests/*.hpp" "tests/*.h" "tests/*.tpp")
+	add_executable(${TEST_NAME} ${TEST_SOURCES})
+
+	find_package(GTest CONFIG REQUIRED)
+	target_include_directories(${TEST_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
+	target_link_libraries(${TEST_NAME} PRIVATE ${LIB_NAME} GTest::GTest)
+
+	gtest_discover_tests(${TEST_NAME})
+	add_dependencies(${TEST_NAME} ${PROJECT_NAME})
+
+	set_compile_options(${TEST_NAME})
+
+	##
+	# Copy test data on build.
+	##
+	set(DATA_IN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/data)
+	set(DATA_OUT_DIR ${BINARY_OUT_DIR}/tests_data)
+	add_custom_command(TARGET ${TEST_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_OUT_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${DATA_IN_DIR} ${DATA_OUT_DIR}
+	)
+endif()
