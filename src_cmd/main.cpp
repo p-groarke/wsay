@@ -1,7 +1,9 @@
-﻿#include <fea_utils/fea_utils.hpp>
+﻿#include <fcntl.h>
+#include <fea_getopt/fea_getopt.hpp>
+#include <fea_utils/fea_utils.hpp>
 #include <filesystem>
+#include <io.h>
 #include <iostream>
-#include <ns_getopt/ns_getopt.h>
 #include <string>
 #include <windows.h>
 #include <wsay/wsay.hpp>
@@ -14,10 +16,13 @@ const std::wstring shutup_cmd = L"!stop";
 //		Once I do that, we can also set :
 //		_setmode( _fileno( stdin ), _O_U8TEXT );
 //		and everything should be gucci.
-int main(int argc, char** argv) {
+int wmain(int argc, wchar_t** argv, wchar_t**) {
 	// Doesn't really do much for us, but set it anyways to make sure user cmd
 	// is in utf8 mode.
 	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+	_setmode(_fileno(stdin), _O_U16TEXT);
+	_setmode(_fileno(stdout), _O_U16TEXT);
 
 	wsy::voice voice;
 
@@ -25,112 +30,124 @@ int main(int argc, char** argv) {
 	size_t chosen_voice = 0;
 	std::wstring speech_text;
 
-	std::array<opt::argument, 8> args = { {
-			// clang-format
-			{ "\"sentence\"", opt::type::raw_arg,
-					[&](std::string_view f) {
-						std::string t = { f.begin(), f.end() };
-						speech_text = fea::current_codepage_to_utf16_w(t);
-						return true;
-					},
-					"Sentence to say. You can use speech xml." },
-			{ "list_voices", opt::type::no_arg,
-					[&]() {
-						std::vector<std::wstring> names
-								= voice.available_voices();
-						for (size_t i = 0; i < names.size(); ++i) {
-							wprintf(L"%zu : %s\n", i + 1, names[i].c_str());
-						}
-						return true;
-					},
-					"Lists available voices.", 'l' },
-			{ "voice", opt::type::required_arg,
-					[&](std::string_view f) {
-						std::string t{ f };
-						chosen_voice = std::stoull(t);
-						if (chosen_voice == 0
-								|| chosen_voice
-										> voice.available_voices_size()) {
-							fprintf(stderr,
-									"beep boop, wrong voice selected.\n\n");
-							return false;
-						}
-						return true;
-					},
-					"Choose a different voice. Use the voice number printed "
-					"using --list_voices.",
-					'v' },
-			{ "input_text", opt::type::required_arg,
-					[&](std::string_view f) {
-						std::filesystem::path filepath = { f };
-						return wsy::parse_text_file(filepath, speech_text);
-					},
-					"Play text from '.txt' file. Supports speech xml.", 'i' },
-			{ "output_file", opt::type::optional_arg,
-					[&](std::string_view f) {
-						std::filesystem::path filepath
-								= std::filesystem::current_path() / L"out.wav";
-						if (!f.empty()) {
-							filepath = { f };
-						}
-						voice.start_file_output(filepath);
-						return true;
-					},
-					"Outputs to wav file. Uses 'out.wav' if no filename is "
-					"provided.",
-					'o' },
-			{ "interactive", opt::type::no_arg,
-					[&]() {
-						interactive_mode = true;
-						return true;
-					},
-					"Enter interactive mode. Type sentences, they will be "
-					"spoken when you press enter.\nUse 'ctrl+c' or "
-					"type '!exit' to quit.",
-					'I' },
-			{ "list_devices", opt::type::no_arg,
-					[&]() {
-						std::vector<std::wstring> dnames
-								= voice.available_devices();
+	fea::get_opt<wchar_t> opt;
 
-						for (size_t i = 0; i < dnames.size(); ++i) {
-							wprintf(L"%zu : %s\n", i + 1, dnames[i].c_str());
-						}
-						return true;
-					},
-					"List detected playback devices.", 'd' },
-			{ "playback_device", opt::type::multi_arg,
-					[&](const opt::multi_array& arr, size_t size) {
-						for (size_t i = 0; i < size; ++i) {
-							std::string t{ arr[i] };
-							unsigned chosen_device = std::stoul(t);
-							if (chosen_device == 0
-									|| chosen_device
-											> voice.available_devices_size()) {
-								fprintf(stderr,
-										"beep boop, wrong device "
-										"selected.\n\n");
-								return false;
-							}
+	opt.add_raw_option(
+			L"sentence",
+			[&](std::wstring&& str) {
+				speech_text = std::move(str);
+				// speech_text = fea::current_codepage_to_utf16_w(t);
+				return true;
+			},
+			L"Sentence to say. You can use speech xml.");
 
-							voice.enable_device_playback(chosen_device - 1);
-						}
+	opt.add_flag_option(
+			L"list_voices",
+			[&]() {
+				std::vector<std::wstring> names = voice.available_voices();
+				for (size_t i = 0; i < names.size(); ++i) {
+					wprintf(L"%zu : %s\n", i + 1, names[i].c_str());
+				}
+				return true;
+			},
+			L"Lists available voices.", 'l');
 
-						return true;
-					},
-					"Specify a playback device. Use the number "
-					"provided by --list_devices.\nYou can provide more than 1 "
-					"playback device, seperate the numbers with spaces.\nYou "
-					"can also mix output to file + playback.",
-					'p' },
-	} };
+	opt.add_required_arg_option(
+			L"voice",
+			[&](std::wstring&& str) {
+				chosen_voice = std::stoull(str);
+				if (chosen_voice == 0
+						|| chosen_voice > voice.available_voices_size()) {
+					fprintf(stderr, "beep boop, wrong voice selected.\n\n");
+					return false;
+				}
+				return true;
+			},
+			L"Choose a different voice. Use the voice number printed "
+			"using --list_voices.",
+			L'v');
 
-	std::string help_outro = "wsay\nversion ";
+
+	opt.add_required_arg_option(
+			L"input_text",
+			[&](std::wstring&& f) {
+				std::filesystem::path filepath = { std::move(f) };
+				return wsy::parse_text_file(filepath, speech_text);
+			},
+			L"Play text from '.txt' file. Supports speech xml.", L'i');
+
+
+	opt.add_optional_arg_option(
+			L"output_file",
+			[&](std::wstring f) {
+				std::filesystem::path filepath
+						= std::filesystem::current_path() / L"out.wav";
+				if (!f.empty()) {
+					filepath = { std::move(f) };
+				}
+				voice.start_file_output(filepath);
+				return true;
+			},
+			L"Outputs to wav file. Uses 'out.wav' if no filename is "
+			"provided.",
+			L'o'
+
+	);
+
+	opt.add_flag_option(
+			L"interactive",
+			[&]() {
+				interactive_mode = true;
+				return true;
+			},
+			L"Enter interactive mode. Type sentences, they will be "
+			"spoken when you press enter.\nUse 'ctrl+c' or "
+			"type '!exit' to quit.",
+			L'I');
+
+	opt.add_flag_option(
+			L"list_devices",
+			[&]() {
+				std::vector<std::wstring> dnames = voice.available_devices();
+
+				for (size_t i = 0; i < dnames.size(); ++i) {
+					wprintf(L"%zu : %s\n", i + 1, dnames[i].c_str());
+				}
+				return true;
+			},
+			L"List detected playback devices.", 'd');
+
+	opt.add_multi_arg_option(
+			L"playback_device",
+			[&](std::vector<std::wstring>&& arr) {
+				for (size_t i = 0; i < arr.size(); ++i) {
+					unsigned chosen_device = std::stoul(arr[i]);
+					if (chosen_device == 0
+							|| chosen_device > voice.available_devices_size()) {
+						fwprintf(stderr,
+								L"beep boop, wrong device "
+								"selected.\n\n");
+						return false;
+					}
+
+					voice.enable_device_playback(chosen_device - 1);
+				}
+
+				return true;
+			},
+			L"Specify a playback device. Use the number "
+			"provided by --list_devices.\nYou can provide more than 1 "
+			"playback device, seperate the numbers with spaces. You "
+			"can also mix output to file + playback.",
+			L'p');
+
+
+	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
-	help_outro += "\nhttps://github.com/p-groarke/wsay/releases\n";
-	help_outro += "Philippe Groarke <philippe.groarke@gmail.com>";
+	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
+	help_outro += L"Philippe Groarke <philippe.groarke@gmail.com>";
 
-	bool succeeded = opt::parse_arguments(argc, argv, args, { "", help_outro });
+	bool succeeded = opt.parse_options(argc, argv);
 	if (!succeeded)
 		return -1;
 
@@ -139,10 +156,10 @@ int main(int argc, char** argv) {
 	}
 
 	if (interactive_mode) {
-		printf("[Info] Type sentences, press enter to speak them.\n");
+		wprintf(L"[Info] Type sentences, press enter to speak them.\n");
 		wprintf(L"[Command] '%s' : Exit interactive mode.\n", exit_cmd.c_str());
 		wprintf(L"[Command] '%s' : Interrupt speaking.\n", shutup_cmd.c_str());
-		printf("\n");
+		wprintf(L"\n");
 
 		std::wstring wsentence;
 		while (std::getline(std::wcin, wsentence)) {

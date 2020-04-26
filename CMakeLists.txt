@@ -6,7 +6,7 @@ project(wsay VERSION 1.3.1 LANGUAGES CXX)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(GoogleTest)
-include(ExternalProject)
+include(FetchContent)
 
 # General options
 set(CMAKE_CXX_STANDARD 17)
@@ -38,19 +38,51 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ${DEPENDENCY_FOLDER})
 
 
 # Compile Options
-function(set_compile_options REQUIRED_ARG)
+function(set_compile_options REQUIRED_ARG EXPOSURE)
 	if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-		target_compile_options(${REQUIRED_ARG} PRIVATE -Wall -Wextra -Werror)
+		target_compile_options(${REQUIRED_ARG} ${EXPOSURE} -Wall -Wextra -Wpedantic -Werror)
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		target_compile_options(${REQUIRED_ARG} PRIVATE -Wall -Wextra -Werror)
+		target_compile_options(${REQUIRED_ARG} ${EXPOSURE} -Wall -Wextra -Wpedantic -Werror)
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 	  # using Intel C++
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-		target_compile_definitions(${REQUIRED_ARG} PUBLIC NOMINMAX _UNICODE)
-		target_compile_options(${REQUIRED_ARG} PRIVATE /Zc:__cplusplus /Zc:alignedNew /permissive- /W4 /WX /utf-8)
+		target_compile_definitions(${REQUIRED_ARG} ${EXPOSURE} NOMINMAX UNICODE _UNICODE)
+		target_compile_options(${REQUIRED_ARG} ${EXPOSURE} /Zc:__cplusplus /Zc:alignedNew /permissive- /W4 /WX /utf-8)
 		set_target_properties(${REQUIRED_ARG} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 	endif()
 endfunction()
+
+
+# ExternalProject_Add(wil_ext
+# 	GIT_REPOSITORY https://github.com/microsoft/wil.git
+# 	CONFIGURE_COMMAND ""
+# 	BUILD_COMMAND
+# 		COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include
+# 				${LIB_INCLUDE_DIR}
+# 	INSTALL_COMMAND ""
+# 	UPDATE_COMMAND ""
+# )
+
+
+##
+# External dependencies.
+##
+FetchContent_Declare(fea_utils
+	GIT_REPOSITORY https://github.com/p-groarke/fea_utils.git
+)
+FetchContent_MakeAvailable(fea_utils)
+
+FetchContent_Declare(fea_getopt
+	GIT_REPOSITORY https://github.com/p-groarke/fea_getopt.git
+)
+FetchContent_MakeAvailable(fea_getopt)
+
+FetchContent_Declare(wil
+	GIT_REPOSITORY git@github.com:p-groarke/wil.git
+	GIT_TAG cmake
+	# GIT_REPOSITORY https://github.com/microsoft/wil.git
+)
+FetchContent_MakeAvailable(wil)
 
 
 ##
@@ -67,7 +99,7 @@ target_include_directories(${LIB_NAME} PUBLIC
 )
 target_include_directories(${LIB_NAME} PRIVATE libsrc) # For based paths.
 target_include_directories(${LIB_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
-set_compile_options(${LIB_NAME})
+set_compile_options(${LIB_NAME} PUBLIC)
 
 # Library Install Configuration
 install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}_targets)
@@ -86,9 +118,9 @@ file(GLOB_RECURSE CMDTOOL_SOURCES "src_cmd/*.cpp" "src_cmd/*.c" "src_cmd/*.hpp" 
 add_executable(${PROJECT_NAME} ${CMDTOOL_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src_cmd) # For based paths.
 target_include_directories(${PROJECT_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
-set_compile_options(${PROJECT_NAME})
-add_definitions(-DWSAY_VERSION="${PROJECT_VERSION}")
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME})
+set_compile_options(${PROJECT_NAME} PUBLIC)
+add_definitions(-DWSAY_VERSION=L"${PROJECT_VERSION}")
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME} fea_utils fea_getopt wil)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWIN32_LEAN_AND_MEAN -DWIN32_EXTRA_LEAN -DVC_EXTRALEAN)
 
 
@@ -103,48 +135,11 @@ file(GLOB_RECURSE GUITOOL_SOURCES "src_gui/*.cpp" "src_gui/*.c" "src_gui/*.hpp" 
 add_executable(${GUITOOL_NAME} WIN32 ${GUITOOL_SOURCES})
 target_include_directories(${GUITOOL_NAME} PRIVATE src_gui) # For based paths.
 target_include_directories(${GUITOOL_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
-set_compile_options(${GUITOOL_NAME})
+set_compile_options(${GUITOOL_NAME} PUBLIC)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${GUITOOL_NAME})
 add_definitions(-DWSAY_VERSION="${PROJECT_VERSION}")
 target_link_libraries(${GUITOOL_NAME} PRIVATE ${LIB_NAME} nuklear::nuklear glfw::glfw glad::glad)
 
-
-##
-# External dependencies.
-##
-ExternalProject_Add(ns_getopt_ext
-	GIT_REPOSITORY https://github.com/p-groarke/ns_getopt.git
-	CMAKE_ARGS #-DCMAKE_BUILD_TYPE=Release #${CMAKE_ARGS}
-		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}
-		-DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}
-		-DBUILD_EXAMPLES=Off
-		-DBUILD_TESTING=Off
-	UPDATE_COMMAND ""
-)
-
-ExternalProject_Add(wil_ext
-	GIT_REPOSITORY https://github.com/microsoft/wil.git
-	CONFIGURE_COMMAND ""
-	BUILD_COMMAND
-		COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include
-				${LIB_INCLUDE_DIR}
-	INSTALL_COMMAND ""
-	UPDATE_COMMAND ""
-)
-
-ExternalProject_Add(fea_utils_ext
-	GIT_REPOSITORY https://github.com/p-groarke/fea_utils.git
-	CMAKE_ARGS #-DCMAKE_BUILD_TYPE=Release #${CMAKE_ARGS}
-		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}
-		-DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}
-		-DBUILD_TESTING=Off
-	UPDATE_COMMAND ""
-)
-
-set_target_properties(ns_getopt_ext wil_ext fea_utils_ext PROPERTIES FOLDER ${DEPENDENCY_FOLDER})
-add_dependencies(${PROJECT_NAME} ns_getopt_ext fea_utils_ext)
-add_dependencies(${GUITOOL_NAME} fea_utils_ext)
-add_dependencies(${LIB_NAME} wil_ext fea_utils_ext)
 
 
 # Tests
@@ -163,7 +158,7 @@ if (${BUILD_TESTING})
 	gtest_discover_tests(${TEST_NAME})
 	add_dependencies(${TEST_NAME} ${PROJECT_NAME})
 
-	set_compile_options(${TEST_NAME})
+	set_compile_options(${TEST_NAME} PUBLIC)
 
 	##
 	# Copy test data on build.
