@@ -1,7 +1,7 @@
 cmake_policy(SET CMP0091 NEW)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.conan.txt)
 cmake_minimum_required (VERSION 3.15)
-project(wsay VERSION 1.3.1 LANGUAGES CXX)
+project(wsay VERSION 1.4.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -53,17 +53,6 @@ function(set_compile_options REQUIRED_ARG EXPOSURE)
 endfunction()
 
 
-# ExternalProject_Add(wil_ext
-# 	GIT_REPOSITORY https://github.com/microsoft/wil.git
-# 	CONFIGURE_COMMAND ""
-# 	BUILD_COMMAND
-# 		COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include
-# 				${LIB_INCLUDE_DIR}
-# 	INSTALL_COMMAND ""
-# 	UPDATE_COMMAND ""
-# )
-
-
 ##
 # External dependencies.
 ##
@@ -77,6 +66,8 @@ FetchContent_Declare(fea_getopt
 )
 FetchContent_MakeAvailable(fea_getopt)
 
+set(WIL_BUILD_PACKAGING OFF CACHE INTERNAL "")  # Forces the value
+set(WIL_BUILD_TESTS OFF CACHE INTERNAL "")  # Forces the value
 FetchContent_Declare(wil
 	GIT_REPOSITORY git@github.com:p-groarke/wil.git
 	GIT_TAG cmake

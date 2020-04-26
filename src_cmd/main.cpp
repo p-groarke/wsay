@@ -29,7 +29,6 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"sentence",
 			[&](std::wstring&& str) {
 				speech_text = std::move(str);
-				// speech_text = fea::current_codepage_to_utf16_w(t);
 				return true;
 			},
 			L"Sentence to say. You can use speech xml.");
@@ -43,7 +42,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				}
 				return true;
 			},
-			L"Lists available voices.", 'l');
+			L"Lists available voices.", L'l');
 
 	opt.add_required_arg_option(
 			L"voice",
@@ -108,7 +107,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				}
 				return true;
 			},
-			L"List detected playback devices.", 'd');
+			L"List detected playback devices.", L'd');
 
 	opt.add_multi_arg_option(
 			L"playback_device",
@@ -139,6 +138,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	help_outro += WSAY_VERSION;
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
 	help_outro += L"Philippe Groarke <philippe.groarke@gmail.com>";
+	opt.add_help_outro(help_outro);
 
 	bool succeeded = opt.parse_options(argc, argv);
 	if (!succeeded)

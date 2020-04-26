@@ -119,8 +119,7 @@ bool parse_text_file(
 		return false;
 	}
 
-	std::u32string text = fea::read_with_bom(ifs);
-
+	std::u32string text = fea::open_text_file_with_bom(ifs);
 	out_text = fea::utf32_to_utf16_w(text);
 
 	if (out_text.empty()) {
