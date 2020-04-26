@@ -1,4 +1,5 @@
-﻿#include <fcntl.h>
+﻿#include <clocale>
+#include <fcntl.h>
 #include <fea_getopt/fea_getopt.hpp>
 #include <fea_utils/fea_utils.hpp>
 #include <filesystem>
@@ -12,10 +13,27 @@ const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
 int wmain(int argc, wchar_t** argv, wchar_t**) {
+	// Tests for multi-char support.
+	// std::ios_base::sync_with_stdio(false);
+	// std::wcin.imbue(std::locale("en_US.UTF-8"));
+	// std::wcout.imbue(std::locale("en_US.UTF-8"));
+	// std::wcin.imbue(std::locale("en_US.1200"));
+	// std::wcout.imbue(std::locale("en_US.1200"));
+	// const char* cp_utf16le = ".1200";
+	// std::setlocale(LC_ALL, cp_utf16le);
+
+	unsigned old_in_cp = GetConsoleCP();
+	unsigned old_out_cp = GetConsoleOutputCP();
+	fea::on_exit on_exit([&]() {
+		SetConsoleCP(old_in_cp);
+		SetConsoleOutputCP(old_out_cp);
+	});
+
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 	_setmode(_fileno(stdin), _O_U16TEXT);
 	_setmode(_fileno(stdout), _O_U16TEXT);
+
 
 	wsy::voice voice;
 
@@ -156,6 +174,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 		std::wstring wsentence;
 		while (std::getline(std::wcin, wsentence)) {
+			// while (std::wcin >> wsentence) {
 			if (wsentence == exit_cmd) {
 				break;
 			}
