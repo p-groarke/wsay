@@ -13,6 +13,9 @@ Simple command line text-to-speech with easy file output, voice selection and mo
 - Interactive mode.
 - Supports selecting playback device.
 - Supports multiple simultaneous playback devices and file output.
+- Full unicode (utf8) support (supports asian languages, Slovak, etc).
+  - Note : Window's legacy command prompt has some of it's own issues with utf8.
+- Supports utf8, utf16le and utf16be text files.
 
 
 ## Install Instructions
