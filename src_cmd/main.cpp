@@ -11,14 +11,7 @@
 const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
-// cmd only : Character support will be ok-ish for now.
-// TODO : abstract char type in ns_getopt and use wmain.
-//		Once I do that, we can also set :
-//		_setmode( _fileno( stdin ), _O_U8TEXT );
-//		and everything should be gucci.
 int wmain(int argc, wchar_t** argv, wchar_t**) {
-	// Doesn't really do much for us, but set it anyways to make sure user cmd
-	// is in utf8 mode.
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 	_setmode(_fileno(stdin), _O_U16TEXT);

@@ -92,6 +92,8 @@ set(LIB_NAME lib${PROJECT_NAME})
 file(GLOB_RECURSE LIB_HEADERS "libinclude/*.hpp" "libinclude/*.h" "libinclude/*.tpp")
 file(GLOB_RECURSE LIB_SOURCES "libsrc/*.cpp" "libsrc/*.c" "libsrc/*.hpp" "libsrc/*.h" "libsrc/*.tpp")
 add_library(${LIB_NAME} ${LIB_HEADERS} ${LIB_SOURCES})
+target_link_libraries(${LIB_NAME} PUBLIC fea_utils WIL)
+
 # Interface
 target_include_directories(${LIB_NAME} PUBLIC
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -119,8 +121,8 @@ add_executable(${PROJECT_NAME} ${CMDTOOL_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src_cmd) # For based paths.
 target_include_directories(${PROJECT_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
 set_compile_options(${PROJECT_NAME} PUBLIC)
-add_definitions(-DWSAY_VERSION=L"${PROJECT_VERSION}")
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME} fea_utils fea_getopt wil)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME} fea_getopt)
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DWSAY_VERSION=L"${PROJECT_VERSION}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWIN32_LEAN_AND_MEAN -DWIN32_EXTRA_LEAN -DVC_EXTRALEAN)
 
 
@@ -137,7 +139,7 @@ target_include_directories(${GUITOOL_NAME} PRIVATE src_gui) # For based paths.
 target_include_directories(${GUITOOL_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
 set_compile_options(${GUITOOL_NAME} PUBLIC)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${GUITOOL_NAME})
-add_definitions(-DWSAY_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(${GUITOOL_NAME} PRIVATE -DWSAY_VERSION="${PROJECT_VERSION}")
 target_link_libraries(${GUITOOL_NAME} PRIVATE ${LIB_NAME} nuklear::nuklear glfw::glfw glad::glad)
 
 
