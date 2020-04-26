@@ -102,14 +102,14 @@ bool parse_text_file(
 		const std::filesystem::path& path, std::wstring& out_text) {
 
 	if (!std::filesystem::exists(path)) {
-		fprintf(stderr, "Input text file doesn't exist : '%s'\n",
-				path.string().c_str());
+		fwprintf(stderr, L"Input text file doesn't exist : '%s'\n",
+				path.wstring().c_str());
 		return false;
 	}
 
 	if (path.extension() != ".txt") {
-		fprintf(stderr,
-				"Text option only supports '.txt' "
+		fwprintf(stderr,
+				L"Text option only supports '.txt' "
 				"files.\n");
 		return false;
 	}
@@ -119,13 +119,12 @@ bool parse_text_file(
 		return false;
 	}
 
-	std::u32string text = fea::read_with_bom(ifs);
-
+	std::u32string text = fea::open_text_file_with_bom(ifs);
 	out_text = fea::utf32_to_utf16_w(text);
 
 	if (out_text.empty()) {
-		fprintf(stderr,
-				"Couldn't parse text file or there is no "
+		fwprintf(stderr,
+				L"Couldn't parse text file or there is no "
 				"text in file.\n");
 		return false;
 	}
