@@ -69,9 +69,7 @@ FetchContent_MakeAvailable(fea_getopt)
 set(WIL_BUILD_PACKAGING OFF CACHE INTERNAL "")  # Forces the value
 set(WIL_BUILD_TESTS OFF CACHE INTERNAL "")  # Forces the value
 FetchContent_Declare(wil
-	GIT_REPOSITORY git@github.com:p-groarke/wil.git
-	GIT_TAG cmake
-	# GIT_REPOSITORY https://github.com/microsoft/wil.git
+	GIT_REPOSITORY https://github.com/microsoft/wil.git
 )
 FetchContent_MakeAvailable(wil)
 
