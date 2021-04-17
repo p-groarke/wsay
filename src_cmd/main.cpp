@@ -119,10 +119,12 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"list_devices",
 			[&]() {
 				std::vector<std::wstring> dnames = voice.available_devices();
-
 				for (size_t i = 0; i < dnames.size(); ++i) {
 					wprintf(L"%zu : %s\n", i + 1, dnames[i].c_str());
 				}
+
+				wprintf(L"\nUse 'all' to select every device.\n");
+
 				return true;
 			},
 			L"List detected playback devices.", L'd');
@@ -130,6 +132,14 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	opt.add_multi_arg_option(
 			L"playback_device",
 			[&](std::vector<std::wstring>&& arr) {
+				if (arr.size() == 1 && arr.front() == L"all") {
+					for (size_t i = 0; i < voice.available_devices_size();
+							++i) {
+						voice.enable_device_playback(i);
+					}
+					return true;
+				}
+
 				for (size_t i = 0; i < arr.size(); ++i) {
 					unsigned chosen_device = std::stoul(arr[i]);
 					if (chosen_device == 0
@@ -148,7 +158,8 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"Specify a playback device. Use the number "
 			"provided by --list_devices.\nYou can provide more than 1 "
 			"playback device, seperate the numbers with spaces. You "
-			"can also mix output to file + playback.",
+			"can also mix output to file + playback.\nUse 'all' to select all "
+			"devices.",
 			L'p');
 
 
