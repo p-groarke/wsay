@@ -95,16 +95,17 @@ Arguments:
  "sentence"    Sentence to say. You can use speech xml.
 
 Options:
- -l, --list_voices                 Lists available voices.
- -v, --voice <value>               Choose a different voice. Use the voice number printed using --list_voices.
  -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
- -o, --output_file <optional>      Outputs to wav file. Uses 'out.wav' if no filename is provided.
  -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
                                    Use 'ctrl+c' or type '!exit' to quit.
  -d, --list_devices                List detected playback devices.
+ -l, --list_voices                 Lists available voices.
+ -o, --output_file <optional>      Outputs to wav file. Uses 'out.wav' if no filename is provided.
  -p, --playback_device <multiple>  Specify a playback device. Use the number provided by --list_devices.
-                                   You can provide more than 1 playback device, seperate the numbers with spaces.
-                                   You can also mix output to file + playback.
+                                   You can provide more than 1 playback device, seperate the numbers with spaces. You
+                                   can also mix output to file + playback.
+                                   Use 'all' to select all devices.
+ -v, --voice <value>               Choose a different voice. Use the voice number printed using --list_voices.
  -h, --help                        Print this help
 ```
 
