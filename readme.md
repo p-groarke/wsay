@@ -76,6 +76,9 @@ wsay "I am speaking on another playback device." --playback_device 2
 # WARNING : The "sentence" must come before the --playback_device (-p) option if it is used!
 wsay "Output EVERYWHERE \o/" -p 1 2 -o
 
+# Use the 'all' shortcut to playback on every device simultaneously.
+wsay "I conquer all devices" -p all
+
 # Here, we are using voice 6, reading text from a file and outputting to 'output.wav'.
 wsay -v 6 -i mix_and_match_options.txt -o output.wav
 
