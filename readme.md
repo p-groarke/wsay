@@ -68,6 +68,8 @@ wsay --list_devices
 	3 : Digital Audio (S/PDIF) (High Definition Audio Device)
 	# etc.
 
+	Use 'all' to select every device.
+
 # Speak using a non-default playback device.
 wsay "I am speaking on another playback device." --playback_device 2
 
