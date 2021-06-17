@@ -81,6 +81,9 @@ wsay "Output EVERYWHERE \o/" -p 1 2 -o
 # Use the 'all' shortcut to playback on every device simultaneously.
 wsay "I conquer all devices" -p all
 
+# You can set the voice volume, from 0 to 100.
+wsay "Softly speaking" --volume 25
+
 # Here, we are using voice 6, reading text from a file and outputting to 'output.wav'.
 wsay -v 6 -i mix_and_match_options.txt -o output.wav
 
@@ -108,6 +111,7 @@ Options:
                                    can also mix output to file + playback.
                                    Use 'all' to select all devices.
  -v, --voice <value>               Choose a different voice. Use the voice number printed using --list_voices.
+ -V, --volume <value>              Sets the voice volume, from 0 to 100.
  -h, --help                        Print this help
 ```
 
