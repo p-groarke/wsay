@@ -134,18 +134,19 @@ bool parse_text_file(
 
 struct voice_data {
 	// Creates default voice.
-	voice_data(ISpObjectToken* selected_voice) {
+	voice_data(ISpObjectToken* selected_voice, uint16_t vol) {
 		if (!SUCCEEDED(voice_ptr.CoCreateInstance(CLSID_SpVoice))) {
 			throw std::runtime_error{ "Couldn't initialize voice." };
 		}
 
 		voice_ptr->SetVoice(selected_voice);
+		voice_ptr->SetVolume(vol);
 	}
 
 	// Creates file out voice.
 	voice_data(ISpObjectToken* selected_voice,
-			const std::filesystem::path& filepath)
-			: voice_data(selected_voice) {
+			const std::filesystem::path& filepath, uint16_t vol)
+			: voice_data(selected_voice, vol) {
 		path = filepath;
 
 		CComPtr<ISpStream> cpStream;
@@ -170,8 +171,8 @@ struct voice_data {
 	}
 
 	voice_data(ISpObjectToken* selected_voice, size_t device_idx,
-			ISpObjectToken* device)
-			: voice_data(selected_voice) {
+			ISpObjectToken* device, uint16_t vol)
+			: voice_data(selected_voice, vol) {
 
 		device_playback_idx = device_idx;
 		voice_ptr->SetOutput(device, TRUE);
@@ -202,7 +203,7 @@ struct voice_impl {
 
 		available_devices = get_playback_devices();
 
-		voices.push_back({ nullptr });
+		voices.push_back(voice_data{ nullptr, 100u });
 	}
 
 	template <class Func>
@@ -227,6 +228,7 @@ struct voice_impl {
 
 	std::vector<voice_data> voices;
 	size_t selected_voice = 0;
+	uint16_t volume = 100;
 };
 
 
@@ -238,7 +240,7 @@ voice::~voice() = default;
 voice::voice(const voice& other)
 		: _impl(std::make_unique<voice_impl>(*other._impl)) {
 }
-voice::voice(voice&& other)
+voice::voice(voice&& other) noexcept
 		: _impl(std::make_unique<voice_impl>(std::move(*other._impl))) {
 }
 
@@ -250,7 +252,7 @@ voice& voice::operator=(const voice& other) {
 	*_impl = *other._impl;
 	return *this;
 }
-voice& voice::operator=(voice&& other) {
+voice& voice::operator=(voice&& other) noexcept {
 	if (this == &other) {
 		return *this;
 	}
@@ -274,6 +276,22 @@ std::vector<std::wstring> voice::available_voices() const {
 	return ret;
 }
 
+void voice::select_voice(size_t voice_idx) {
+	if (voice_idx >= _impl->available_voices.size()) {
+		throw std::out_of_range{ "voice : Selected voice index out-of-range." };
+	}
+
+	_impl->selected_voice = voice_idx;
+
+	stop_speaking();
+
+	for (voice_data& v : _impl->voices) {
+		v.voice_ptr->SetVoice(
+				_impl->available_voices[_impl->selected_voice].second);
+	}
+}
+
+
 size_t voice::available_devices_size() const {
 	return _impl->available_devices.size();
 }
@@ -289,26 +307,6 @@ std::vector<std::wstring> voice::available_devices() const {
 	return ret;
 }
 
-void voice::start_file_output(const std::filesystem::path& path) {
-	if (path.empty()) {
-		throw std::invalid_argument{ "voice : Ouput filepath is empty." };
-	}
-
-	_impl->voices.push_back(
-			{ _impl->available_voices[_impl->selected_voice].second, path });
-}
-
-void voice::stop_file_output() {
-	auto it = std::find_if(_impl->voices.begin(), _impl->voices.end(),
-			[&](const voice_data& v) { return !v.path.empty(); });
-
-	if (it == _impl->voices.end()) {
-		return;
-	}
-
-	_impl->voices.erase(it);
-}
-
 void voice::enable_device_playback(size_t device_idx) {
 	if (device_idx >= _impl->available_devices.size()) {
 		throw std::out_of_range{
@@ -316,14 +314,14 @@ void voice::enable_device_playback(size_t device_idx) {
 		};
 	}
 
-	for (voice_data& v : _impl->voices) {
-		v.voice_ptr->Speak(
-				L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
-	}
+	stop_speaking();
 
-	_impl->voices.push_back(
-			{ _impl->available_voices[_impl->selected_voice].second, device_idx,
-					_impl->available_devices[device_idx].second });
+	_impl->voices.push_back(voice_data{
+			_impl->available_voices[_impl->selected_voice].second,
+			device_idx,
+			_impl->available_devices[device_idx].second,
+			_impl->volume,
+	});
 }
 
 void voice::disable_device_playback(size_t device_idx) {
@@ -347,17 +345,39 @@ void voice::disable_device_playback(size_t device_idx) {
 	_impl->voices.erase(it);
 }
 
-void voice::select_voice(size_t voice_idx) {
-	if (voice_idx >= _impl->available_voices.size()) {
-		throw std::out_of_range{ "voice : Selected voice index out-of-range." };
+void voice::start_file_output(const std::filesystem::path& path) {
+	if (path.empty()) {
+		throw std::invalid_argument{ "voice : Ouput filepath is empty." };
 	}
 
-	_impl->selected_voice = voice_idx;
+	_impl->voices.push_back(voice_data{
+			_impl->available_voices[_impl->selected_voice].second,
+			path,
+			_impl->volume,
+	});
+}
+
+void voice::stop_file_output() {
+	auto it = std::find_if(_impl->voices.begin(), _impl->voices.end(),
+			[&](const voice_data& v) { return !v.path.empty(); });
+
+	if (it == _impl->voices.end()) {
+		return;
+	}
+
+	it->voice_ptr->Speak(
+			L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
+
+	_impl->voices.erase(it);
+}
+
+void voice::set_volume(uint16_t volume) {
+	volume = std::clamp(volume, uint16_t(0), uint16_t(100));
+
+	_impl->volume = volume;
+
 	for (voice_data& v : _impl->voices) {
-		v.voice_ptr->Speak(
-				L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
-		v.voice_ptr->SetVoice(
-				_impl->available_voices[_impl->selected_voice].second);
+		v.voice_ptr->SetVolume(_impl->volume);
 	}
 }
 
@@ -377,10 +397,10 @@ void voice::speak_async(const std::wstring& sentence) {
 }
 
 void voice::stop_speaking() {
-	_impl->execute([](CComPtr<ISpVoice>& voice) {
-		voice->Speak(
+	for (voice_data& v : _impl->voices) {
+		v.voice_ptr->Speak(
 				L"", SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC, nullptr);
-	});
+	}
 }
 
 } // namespace wsy

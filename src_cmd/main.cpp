@@ -162,11 +162,19 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			"devices.",
 			L'p');
 
+	opt.add_required_arg_option(
+			L"volume",
+			[&](std::wstring&& f) {
+				uint16_t vol = uint16_t(std::stoul(f));
+				voice.set_volume(vol);
+				return true;
+			},
+			L"Sets the voice volume, from 0 to 100.", L'V');
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
-	help_outro += L"Philippe Groarke <philippe.groarke@gmail.com>";
+	help_outro += L"Philippe Groarke <hello@philippegroarke.com>";
 	opt.add_help_outro(help_outro);
 
 	bool succeeded = opt.parse_options(argc, argv);
