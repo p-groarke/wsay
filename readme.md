@@ -17,6 +17,7 @@ Simple command line text-to-speech with easy file output, voice selection and mo
   - Note : Window's legacy command prompt has some of it's own issues with utf8.
   - If you need full unicode support, best to use the new [Windows Terminal](https://aka.ms/terminal).
 - Supports utf8, utf16le and utf16be text files.
+- Volume and speed options.
 
 
 ## Install Instructions
@@ -84,11 +85,17 @@ wsay "I conquer all devices" -p all
 # You can set the voice volume, from 0 to 100.
 wsay "Softly speaking" --volume 25
 
+# You can set the voice speed, from 0 to 100. 50 is the default speed.
+wsay "Quickly speaking" --speed 75
+
 # Here, we are using voice 6, reading text from a file and outputting to 'output.wav'.
 wsay -v 6 -i mix_and_match_options.txt -o output.wav
 
 # Ouput to multiple devices using interactive mode with voice 5.
 wsay -v 5 -I -p 1 2
+
+# Speak slowly and quietly, on all devices, using voice 7 and save to wav file.
+wsay "Multiple options example." -v 7 -p all -s 25 -V 25 -o
 ```
 
 
@@ -110,6 +117,7 @@ Options:
                                    You can provide more than 1 playback device, seperate the numbers with spaces. You
                                    can also mix output to file + playback.
                                    Use 'all' to select all devices.
+ -s, --speed <value>               Sets the voice speed, from 0 to 100. 50 is the default speed.
  -v, --voice <value>               Choose a different voice. Use the voice number printed using --list_voices.
  -V, --volume <value>              Sets the voice volume, from 0 to 100.
  -h, --help                        Print this help

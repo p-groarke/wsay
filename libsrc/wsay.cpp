@@ -134,19 +134,20 @@ bool parse_text_file(
 
 struct voice_data {
 	// Creates default voice.
-	voice_data(ISpObjectToken* selected_voice, uint16_t vol) {
+	voice_data(ISpObjectToken* selected_voice, uint16_t vol, int speed) {
 		if (!SUCCEEDED(voice_ptr.CoCreateInstance(CLSID_SpVoice))) {
 			throw std::runtime_error{ "Couldn't initialize voice." };
 		}
 
 		voice_ptr->SetVoice(selected_voice);
 		voice_ptr->SetVolume(vol);
+		voice_ptr->SetRate(speed);
 	}
 
 	// Creates file out voice.
 	voice_data(ISpObjectToken* selected_voice,
-			const std::filesystem::path& filepath, uint16_t vol)
-			: voice_data(selected_voice, vol) {
+			const std::filesystem::path& filepath, uint16_t vol, int speed)
+			: voice_data(selected_voice, vol, speed) {
 		path = filepath;
 
 		CComPtr<ISpStream> cpStream;
@@ -171,8 +172,8 @@ struct voice_data {
 	}
 
 	voice_data(ISpObjectToken* selected_voice, size_t device_idx,
-			ISpObjectToken* device, uint16_t vol)
-			: voice_data(selected_voice, vol) {
+			ISpObjectToken* device, uint16_t vol, int speed)
+			: voice_data(selected_voice, vol, speed) {
 
 		device_playback_idx = device_idx;
 		voice_ptr->SetOutput(device, TRUE);
@@ -203,7 +204,7 @@ struct voice_impl {
 
 		available_devices = get_playback_devices();
 
-		voices.push_back(voice_data{ nullptr, 100u });
+		voices.push_back(voice_data{ nullptr, 100u, 0 });
 	}
 
 	template <class Func>
@@ -229,6 +230,7 @@ struct voice_impl {
 	std::vector<voice_data> voices;
 	size_t selected_voice = 0;
 	uint16_t volume = 100;
+	int speed = 0;
 };
 
 
@@ -321,6 +323,7 @@ void voice::enable_device_playback(size_t device_idx) {
 			device_idx,
 			_impl->available_devices[device_idx].second,
 			_impl->volume,
+			_impl->speed,
 	});
 }
 
@@ -354,6 +357,7 @@ void voice::start_file_output(const std::filesystem::path& path) {
 			_impl->available_voices[_impl->selected_voice].second,
 			path,
 			_impl->volume,
+			_impl->speed,
 	});
 }
 
@@ -378,6 +382,17 @@ void voice::set_volume(uint16_t volume) {
 
 	for (voice_data& v : _impl->voices) {
 		v.voice_ptr->SetVolume(_impl->volume);
+	}
+}
+
+void voice::set_speed(uint16_t speed) {
+	speed = std::clamp(speed, uint16_t(0), uint16_t(100));
+	double temp = (speed / 100.0) * 20.0;
+
+	_impl->speed = int(temp) - 10;
+
+	for (voice_data& v : _impl->voices) {
+		v.voice_ptr->SetRate(_impl->speed);
 	}
 }
 

@@ -171,6 +171,16 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			},
 			L"Sets the voice volume, from 0 to 100.", L'V');
 
+	opt.add_required_arg_option(
+			L"speed",
+			[&](std::wstring&& f) {
+				uint16_t speed = uint16_t(std::stoul(f));
+				voice.set_speed(speed);
+				return true;
+			},
+			L"Sets the voice speed, from 0 to 100. 50 is the default speed.",
+			L's');
+
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";

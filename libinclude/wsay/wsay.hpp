@@ -49,10 +49,11 @@ struct voice {
 	// Stop writing wave file.
 	void stop_file_output();
 
-
 	// Sets the voice volume, from 0 to 100.
 	void set_volume(uint16_t volume);
 
+	// Sets the voice speed, from 0 to 100.
+	void set_speed(uint16_t speed);
 
 	// Speaks the sentence using selected voice to playback outputs and file.
 	// Blocking.
