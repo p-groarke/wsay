@@ -1,9 +1,12 @@
 ﻿#include <clocale>
+#include <cstdio>
 #include <fcntl.h>
 #include <fea/getopt/getopt.hpp>
+#include <fea/serialize/serializer.hpp>
 #include <fea/string/conversions.hpp>
 #include <fea/terminal/win_term.hpp>
 #include <fea/utils/error.hpp>
+#include <fea/utils/file.hpp>
 #include <fea/utils/scope.hpp>
 #include <filesystem>
 #include <io.h>
@@ -50,6 +53,41 @@ std::wstring get_clipboard_text() {
 	return std::wstring{ clip_text };
 }
 
+std::wstring get_pipe_text() {
+	// To fix pipe input, use U8TEXT (and not U16).
+	int res = _setmode(_fileno(stdin), _O_U8TEXT);
+	res = _setmode(_fileno(stdout), _O_U8TEXT);
+	fea::unused(res);
+
+	fea::on_exit e = []() {
+		// Reset afterwards.
+		std::wcin.clear();
+
+		int res = _setmode(_fileno(stdin), _O_U16TEXT);
+		res = _setmode(_fileno(stdout), _O_U16TEXT);
+		fea::unused(res);
+	};
+
+	// Check if we have anything in cin.
+	std::wcin.seekg(0, std::wcin.end);
+	std::streamoff cin_count = std::wcin.tellg();
+	std::wcin.seekg(0, std::wcin.beg);
+
+	if (cin_count <= 0) {
+		return {};
+	}
+
+	// wprintf(L"Pipe detected, enabling pipe mode.\n");
+	std::wstring ret;
+	std::wstring pipe;
+	while (std::getline(std::wcin, pipe)) {
+		ret.insert(ret.end(), pipe.begin(), pipe.end());
+		ret += L"\n";
+	}
+	// wprintf(L"Pipe text :\n%s\n", ret.c_str());
+	return ret;
+}
+
 int wmain(int argc, wchar_t** argv, wchar_t**) {
 	auto on_exit_reset_term = fea::win_utf8_terminal(true);
 
@@ -58,7 +96,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	bool interactive_mode = false;
 	bool clipboard_mode = false;
 	size_t chosen_voice = 0;
-	std::wstring speech_text;
+	std::wstring speech_text = get_pipe_text();
 
 	fea::get_opt<wchar_t> opt;
 
@@ -214,6 +252,11 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	help_outro += L"Philippe Groarke <hello@philippegroarke.com>";
 	opt.add_help_outro(help_outro);
 
+	if (!speech_text.empty()) {
+		// We have some text coming from pipe, or elsewhere.
+		opt.no_options_is_ok();
+	}
+
 	bool succeeded = opt.parse_options(argc, argv);
 	if (!succeeded)
 		return -1;
@@ -230,7 +273,6 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 		std::wstring wsentence;
 		while (std::getline(std::wcin, wsentence)) {
-			// while (std::wcin >> wsentence) {
 			if (wsentence == exit_cmd) {
 				break;
 			}
