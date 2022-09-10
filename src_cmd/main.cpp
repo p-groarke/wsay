@@ -1,7 +1,13 @@
 ﻿#include <clocale>
+#include <cstdio>
 #include <fcntl.h>
-#include <fea_getopt/fea_getopt.hpp>
-#include <fea_utils/fea_utils.hpp>
+#include <fea/getopt/getopt.hpp>
+#include <fea/serialize/serializer.hpp>
+#include <fea/string/conversions.hpp>
+#include <fea/terminal/win_term.hpp>
+#include <fea/utils/error.hpp>
+#include <fea/utils/file.hpp>
+#include <fea/utils/scope.hpp>
 #include <filesystem>
 #include <io.h>
 #include <iostream>
@@ -12,34 +18,85 @@
 const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
+std::wstring get_clipboard_text() {
+	if (!IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+		fwprintf(stderr, L"Clipboard doesn't contain text, exiting.\n");
+		return {};
+	}
+
+	if (!OpenClipboard(nullptr)) {
+		fwprintf(stderr, L"Couldn't open clipboard for reading.\n");
+		std::error_code ec = fea::last_os_error();
+		std::wstring wmsg = fea::utf8_to_utf16_w(ec.message());
+		fwprintf(stderr, L"Error message : '%s'\n", wmsg.c_str());
+		return {};
+	}
+	fea::on_exit e = []() { CloseClipboard(); };
+
+	HANDLE data = GetClipboardData(CF_UNICODETEXT);
+	if (data == nullptr) {
+		fwprintf(stderr, L"Couldn't read clipboard data.\n");
+		std::error_code ec = fea::last_os_error();
+		std::wstring wmsg = fea::utf8_to_utf16_w(ec.message());
+		fwprintf(stderr, L"Error message : '%s'\n", wmsg.c_str());
+		return {};
+	}
+
+	const wchar_t* clip_text = nullptr;
+	clip_text = static_cast<const wchar_t*>(GlobalLock(data));
+	if (clip_text == nullptr) {
+		fwprintf(stderr, L"Couldn't convert clipboard data to string.\n");
+		return {};
+	}
+	fea::on_exit e2 = [&]() { GlobalUnlock(data); };
+
+	return std::wstring{ clip_text };
+}
+
+std::wstring get_pipe_text() {
+	// To fix pipe input, use U8TEXT (and not U16).
+	int res = _setmode(_fileno(stdin), _O_U8TEXT);
+	res = _setmode(_fileno(stdout), _O_U8TEXT);
+	fea::unused(res);
+
+	fea::on_exit e = []() {
+		// Reset afterwards.
+		std::wcin.clear();
+
+		int res = _setmode(_fileno(stdin), _O_U16TEXT);
+		res = _setmode(_fileno(stdout), _O_U16TEXT);
+		fea::unused(res);
+	};
+
+	// Check if we have anything in cin.
+	std::wcin.seekg(0, std::wcin.end);
+	std::streamoff cin_count = std::wcin.tellg();
+	std::wcin.seekg(0, std::wcin.beg);
+
+	if (cin_count <= 0) {
+		return {};
+	}
+
+	// wprintf(L"Pipe detected, enabling pipe mode.\n");
+	std::wstring ret;
+	std::wstring pipe;
+	while (std::getline(std::wcin, pipe)) {
+		ret.insert(ret.end(), pipe.begin(), pipe.end());
+		ret += L"\n";
+	}
+	// wprintf(L"Pipe text :\n%s\n", ret.c_str());
+	return ret;
+}
+
 int wmain(int argc, wchar_t** argv, wchar_t**) {
-	// Tests for multi-char support.
-	// std::ios_base::sync_with_stdio(false);
-	// std::wcin.imbue(std::locale("en_US.UTF-8"));
-	// std::wcout.imbue(std::locale("en_US.UTF-8"));
-	// std::wcin.imbue(std::locale("en_US.1200"));
-	// std::wcout.imbue(std::locale("en_US.1200"));
-	// const char* cp_utf16le = ".1200";
-	// std::setlocale(LC_ALL, cp_utf16le);
-
-	unsigned old_in_cp = GetConsoleCP();
-	unsigned old_out_cp = GetConsoleOutputCP();
-	fea::on_exit on_exit([&]() {
-		SetConsoleCP(old_in_cp);
-		SetConsoleOutputCP(old_out_cp);
-	});
-
-	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8);
-	_setmode(_fileno(stdin), _O_U16TEXT);
-	_setmode(_fileno(stdout), _O_U16TEXT);
-
+	auto on_exit_reset_term = fea::win_utf8_terminal(true);
 
 	wsy::voice voice;
 
 	bool interactive_mode = false;
+	bool clipboard_mode = false;
 	size_t chosen_voice = 0;
-	std::wstring speech_text;
+	std::wstring speech_text = get_pipe_text();
 
 	fea::get_opt<wchar_t> opt;
 
@@ -181,11 +238,24 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"Sets the voice speed, from 0 to 100. 50 is the default speed.",
 			L's');
 
+	opt.add_flag_option(
+			L"clipboard",
+			[&]() {
+				clipboard_mode = true;
+				return true;
+			},
+			L"Speak currently copied text (the text in your clipboard).", L'c');
+
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
 	help_outro += L"Philippe Groarke <hello@philippegroarke.com>";
 	opt.add_help_outro(help_outro);
+
+	if (!speech_text.empty()) {
+		// We have some text coming from pipe, or elsewhere.
+		opt.no_options_is_ok();
+	}
 
 	bool succeeded = opt.parse_options(argc, argv);
 	if (!succeeded)
@@ -203,7 +273,6 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 		std::wstring wsentence;
 		while (std::getline(std::wcin, wsentence)) {
-			// while (std::wcin >> wsentence) {
 			if (wsentence == exit_cmd) {
 				break;
 			}
@@ -215,9 +284,18 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 			voice.speak_async(wsentence);
 		}
-	} else {
-		voice.speak(speech_text);
+		return 0;
 	}
 
+	if (clipboard_mode) {
+		speech_text = get_clipboard_text();
+		if (speech_text.empty()) {
+			return -1;
+		}
+
+		wprintf(L"Playing clipboard text : '%s'\n", speech_text.c_str());
+	}
+
+	voice.speak(speech_text);
 	return 0;
 }
