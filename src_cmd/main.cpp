@@ -1,7 +1,7 @@
 ﻿#include <clocale>
 #include <fcntl.h>
-#include <fea_getopt/fea_getopt.hpp>
-#include <fea_utils/fea_utils.hpp>
+#include <fea/getopt/getopt.hpp>
+#include <fea/utils/scope.hpp>
 #include <filesystem>
 #include <io.h>
 #include <iostream>
@@ -38,6 +38,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	wsy::voice voice;
 
 	bool interactive_mode = false;
+	bool clipboard_mode = false;
 	size_t chosen_voice = 0;
 	std::wstring speech_text;
 
@@ -181,6 +182,14 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"Sets the voice speed, from 0 to 100. 50 is the default speed.",
 			L's');
 
+	opt.add_flag_option(
+			L"clipboard",
+			[&]() {
+				clipboard_mode = true;
+				return true;
+			},
+			L"Speak currently currently copied text.", L'c');
+
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
@@ -193,6 +202,16 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 	if (chosen_voice != 0) {
 		voice.select_voice(chosen_voice - 1);
+	}
+
+	if (clipboard_mode) {
+		if (!OpenClipboard(nullptr)) {
+			fwprintf(
+					stderr, L"Couldn't open clipboard for reading. Exiting.\n");
+			return -1;
+		}
+
+		return 0;
 	}
 
 	if (interactive_mode) {
@@ -215,9 +234,9 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 			voice.speak_async(wsentence);
 		}
-	} else {
-		voice.speak(speech_text);
+		return 0;
 	}
 
+	voice.speak(speech_text);
 	return 0;
 }

@@ -12,7 +12,8 @@ extern CComModule _Module;
 #pragma warning(pop)
 
 #include <algorithm>
-#include <fea_utils/fea_utils.hpp>
+#include <fea/string/conversions.hpp>
+#include <fea/utils/file.hpp>
 #include <functional>
 #include <wil/resource.h>
 #include <wil/result.h>
