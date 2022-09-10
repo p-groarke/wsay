@@ -8,7 +8,7 @@ Simple command line text-to-speech with easy file output, voice selection and mo
 ## Features
 - Output to wav file.
 - Select different voices (including new Windows 10 voices).
-- Supports speech xml (text file mode only).
+- Supports [speech xml](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ms717077(v=vs.85)) (text file mode only).
 - Play text file.
 - Interactive mode.
 - Supports selecting playback device.
