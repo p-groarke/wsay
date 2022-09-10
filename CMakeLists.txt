@@ -59,8 +59,8 @@ fea_fetch_content(wil
 )
 
 # Pull conan
-fea_pull_conan("-s compiler.runtime=MTd")
-
+fea_pull_conan_debug("-s compiler.runtime=MTd")
+fea_pull_conan_release("-s compiler.runtime=MT")
 
 # libwsay MT
 set(LIB_NAME lib${PROJECT_NAME})
