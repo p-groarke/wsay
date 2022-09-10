@@ -7,16 +7,16 @@ Simple command line text-to-speech with easy file output, voice selection and mo
 
 ## Features
 - Output to wav file.
+- Supports playback from text files, clipboard and pipes.
 - Select different voices (including new Windows 10 voices).
 - Supports [speech xml](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ms717077(v=vs.85)) (text file mode only).
-- Play text file.
-- Interactive mode.
 - Supports selecting playback device.
 - Supports multiple simultaneous playback devices and file output.
 - Full unicode (utf8) support (supports asian languages, Slovak, etc).
   - Note : Window's legacy command prompt has some of it's own issues with utf8.
   - If you need full unicode support, best to use the new [Windows Terminal](https://aka.ms/terminal).
 - Supports utf8, utf16le and utf16be text files.
+- Interactive mode.
 - Volume and speed options.
 
 
@@ -53,6 +53,15 @@ wsay "You can name the ouput file." -o my_output_file.wav
 
 # Read text from a text file instead.
 wsay -i i_can_read_a_text_file.txt
+
+# Read text currently copied to clipboard.
+wsay -c
+
+# Pipe text.
+echo Speaking from pipe. | wsay
+
+# Pipe in a file.
+wsay < "some_file.txt"
 
 # In interactive mode, type sentences and press enter for them to be read.
 # Use !exit to quit.
@@ -107,6 +116,7 @@ Arguments:
  "sentence"    Sentence to say. You can use speech xml.
 
 Options:
+ -c, --clipboard                   Speak currently copied text (the text in your clipboard).
  -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
  -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
                                    Use 'ctrl+c' or type '!exit' to quit.
@@ -121,6 +131,11 @@ Options:
  -v, --voice <value>               Choose a different voice. Use the voice number printed using --list_voices.
  -V, --volume <value>              Sets the voice volume, from 0 to 100.
  -h, --help                        Print this help
+
+wsay
+version 1.5.0
+https://github.com/p-groarke/wsay/releases
+Philippe Groarke <hello@philippegroarke.com>
 ```
 
 ## Build
