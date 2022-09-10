@@ -75,7 +75,7 @@ target_include_directories(${LIB_NAME} PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libinclude>
 )
 target_include_directories(${LIB_NAME} PRIVATE libsrc) # For based paths.
-# target_include_directories(${LIB_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
+
 fea_set_compile_options(${LIB_NAME} PUBLIC)
 set_target_properties(${LIB_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
@@ -93,7 +93,7 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libinclude/wsay" DESTINATION "${C
 file(GLOB_RECURSE CMDTOOL_SOURCES "src_cmd/*.cpp" "src_cmd/*.c" "src_cmd/*.hpp" "src_cmd/*.h" "src_cmd/*.tpp")
 add_executable(${PROJECT_NAME} ${CMDTOOL_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src_cmd) # For based paths.
-target_include_directories(${PROJECT_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
+
 fea_set_compile_options(${PROJECT_NAME} PUBLIC)
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
@@ -110,7 +110,7 @@ set(GUITOOL_NAME ${PROJECT_NAME}_gui)
 file(GLOB_RECURSE GUITOOL_SOURCES "src_gui/*.cpp" "src_gui/*.c" "src_gui/*.hpp" "src_gui/*.h" "src_gui/*.tpp")
 add_executable(${GUITOOL_NAME} WIN32 ${GUITOOL_SOURCES})
 target_include_directories(${GUITOOL_NAME} PRIVATE src_gui) # For based paths.
-target_include_directories(${GUITOOL_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
+
 fea_set_compile_options(${GUITOOL_NAME} PUBLIC)
 set_target_properties(${GUITOOL_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
@@ -130,8 +130,6 @@ if (${WSAY_TESTS})
 	set(TEST_NAME ${PROJECT_NAME}_tests)
 	file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp" "tests/*.c" "tests/*.hpp" "tests/*.h" "tests/*.tpp")
 	add_executable(${TEST_NAME} ${TEST_SOURCES})
-
-	target_include_directories(${TEST_NAME} PRIVATE  ${LIB_INCLUDE_DIR})
 	target_link_libraries(${TEST_NAME} PRIVATE ${LIB_NAME} GTest::GTest)
 
 	gtest_discover_tests(${TEST_NAME})

@@ -1,6 +1,9 @@
 ﻿#include <clocale>
 #include <fcntl.h>
 #include <fea/getopt/getopt.hpp>
+#include <fea/string/conversions.hpp>
+#include <fea/terminal/win_term.hpp>
+#include <fea/utils/error.hpp>
 #include <fea/utils/scope.hpp>
 #include <filesystem>
 #include <io.h>
@@ -12,28 +15,43 @@
 const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
+std::wstring get_clipboard_text() {
+	if (!IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+		fwprintf(stderr, L"Clipboard doesn't contain text, exiting.\n");
+		return {};
+	}
+
+	if (!OpenClipboard(nullptr)) {
+		fwprintf(stderr, L"Couldn't open clipboard for reading.\n");
+		std::error_code ec = fea::last_os_error();
+		std::wstring wmsg = fea::utf8_to_utf16_w(ec.message());
+		fwprintf(stderr, L"Error message : '%s'\n", wmsg.c_str());
+		return {};
+	}
+	fea::on_exit e = []() { CloseClipboard(); };
+
+	HANDLE data = GetClipboardData(CF_UNICODETEXT);
+	if (data == nullptr) {
+		fwprintf(stderr, L"Couldn't read clipboard data.\n");
+		std::error_code ec = fea::last_os_error();
+		std::wstring wmsg = fea::utf8_to_utf16_w(ec.message());
+		fwprintf(stderr, L"Error message : '%s'\n", wmsg.c_str());
+		return {};
+	}
+
+	const wchar_t* clip_text = nullptr;
+	clip_text = static_cast<const wchar_t*>(GlobalLock(data));
+	if (clip_text == nullptr) {
+		fwprintf(stderr, L"Couldn't convert clipboard data to string.\n");
+		return {};
+	}
+	fea::on_exit e2 = [&]() { GlobalUnlock(data); };
+
+	return std::wstring{ clip_text };
+}
+
 int wmain(int argc, wchar_t** argv, wchar_t**) {
-	// Tests for multi-char support.
-	// std::ios_base::sync_with_stdio(false);
-	// std::wcin.imbue(std::locale("en_US.UTF-8"));
-	// std::wcout.imbue(std::locale("en_US.UTF-8"));
-	// std::wcin.imbue(std::locale("en_US.1200"));
-	// std::wcout.imbue(std::locale("en_US.1200"));
-	// const char* cp_utf16le = ".1200";
-	// std::setlocale(LC_ALL, cp_utf16le);
-
-	unsigned old_in_cp = GetConsoleCP();
-	unsigned old_out_cp = GetConsoleOutputCP();
-	fea::on_exit on_exit([&]() {
-		SetConsoleCP(old_in_cp);
-		SetConsoleOutputCP(old_out_cp);
-	});
-
-	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8);
-	_setmode(_fileno(stdin), _O_U16TEXT);
-	_setmode(_fileno(stdout), _O_U16TEXT);
-
+	auto on_exit_reset_term = fea::win_utf8_terminal(true);
 
 	wsy::voice voice;
 
@@ -188,7 +206,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				clipboard_mode = true;
 				return true;
 			},
-			L"Speak currently currently copied text.", L'c');
+			L"Speak currently copied text (the text in your clipboard).", L'c');
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
@@ -202,16 +220,6 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 	if (chosen_voice != 0) {
 		voice.select_voice(chosen_voice - 1);
-	}
-
-	if (clipboard_mode) {
-		if (!OpenClipboard(nullptr)) {
-			fwprintf(
-					stderr, L"Couldn't open clipboard for reading. Exiting.\n");
-			return -1;
-		}
-
-		return 0;
 	}
 
 	if (interactive_mode) {
@@ -235,6 +243,15 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			voice.speak_async(wsentence);
 		}
 		return 0;
+	}
+
+	if (clipboard_mode) {
+		speech_text = get_clipboard_text();
+		if (speech_text.empty()) {
+			return -1;
+		}
+
+		wprintf(L"Playing clipboard text : '%s'\n", speech_text.c_str());
 	}
 
 	voice.speak(speech_text);
