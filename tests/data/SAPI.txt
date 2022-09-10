@@ -1,0 +1,33 @@
+<volume level="25">volume 25</volume>
+<volume level="50">volume 50</volume>
+<volume level="100">volume 100</volume>
+
+
+<rate absspeed="5">
+   This text should be spoken at rate five.
+   <rate absspeed="-5">
+      This text should be spoken at rate negative five.
+   </rate>
+</rate>
+
+<rate speed="5">
+   This text should be spoken at rate five.
+      <rate speed="-5">
+         This text should be spoken at rate zero.
+      </rate>
+</rate>
+
+
+<pitch absmiddle="10">
+This text should be spoken at pitch ten.
+   <pitch absmiddle="-10">
+      This text should be spoken at pitch negative ten.
+   </pitch>
+</pitch>
+
+<pitch middle="10">
+This text should be spoken at pitch ten.
+   <pitch middle="-10">
+      This text should be spoken at pitch zero.
+   </pitch>
+</pitch>
