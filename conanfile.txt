@@ -1,17 +1,10 @@
 [requires]
 gtest/1.10.0@_/_
-nuklear/4.01.7@_/_
-glfw/3.3@bincrafters/stable
-glad/0.1.33@_/_
 
 [generators]
 cmake_find_package_multi
 
 [options]
-glad:gl_profile=core
-glad:gl_version=4.5
-glad:spec=gl
-glad:no_loader=False
 gtest:build_gmock=False
 
 [imports]

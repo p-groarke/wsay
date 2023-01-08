@@ -90,9 +90,11 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libinclude/wsay" DESTINATION "${C
 
 
 # wsay_cmd
-file(GLOB_RECURSE CMDTOOL_SOURCES "src_cmd/*.cpp" "src_cmd/*.c" "src_cmd/*.hpp" "src_cmd/*.h" "src_cmd/*.tpp")
+file(GLOB_RECURSE CMDTOOL_SOURCES
+		"src/*.cpp" "src/*.c" "src/*.hpp" "src/*.h" "src/*.tpp"
+)
 add_executable(${PROJECT_NAME} ${CMDTOOL_SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE src_cmd) # For based paths.
+target_include_directories(${PROJECT_NAME} PRIVATE src) # For based paths.
 
 fea_set_compile_options(${PROJECT_NAME} PUBLIC)
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -100,24 +102,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThre
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME} fea_libs)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWSAY_VERSION=L"${PROJECT_VERSION}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWIN32_LEAN_AND_MEAN -DWIN32_EXTRA_LEAN -DVC_EXTRALEAN)
-
-
-# wsay_gui
-find_package(nuklear CONFIG REQUIRED)
-find_package(glfw CONFIG REQUIRED)
-find_package(glad CONFIG REQUIRED)
-set(GUITOOL_NAME ${PROJECT_NAME}_gui)
-file(GLOB_RECURSE GUITOOL_SOURCES "src_gui/*.cpp" "src_gui/*.c" "src_gui/*.hpp" "src_gui/*.h" "src_gui/*.tpp")
-add_executable(${GUITOOL_NAME} WIN32 ${GUITOOL_SOURCES})
-target_include_directories(${GUITOOL_NAME} PRIVATE src_gui) # For based paths.
-
-fea_set_compile_options(${GUITOOL_NAME} PUBLIC)
-set_target_properties(${GUITOOL_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${GUITOOL_NAME})
-target_compile_definitions(${GUITOOL_NAME} PRIVATE -DWSAY_VERSION="${PROJECT_VERSION}")
-target_link_libraries(${GUITOOL_NAME} PRIVATE ${LIB_NAME} nuklear::nuklear glfw::glfw glad::glad)
-
 
 
 # Tests
