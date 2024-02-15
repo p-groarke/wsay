@@ -31,7 +31,7 @@ fea_import_gitignore()
 fea_set_output_dir(${CMAKE_BINARY_DIR}/bin)
 
 # General options
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 
 # Set fea_libs options.
@@ -40,7 +40,7 @@ if (${FEA_LIBS_LOCAL})
 else()
 	set(FEA_TESTS Off CACHE INTERNAL "")
 endif()
-set(FEA_CPP17 On CACHE INTERNAL "")
+set(FEA_CPP20 On CACHE INTERNAL "")
 
 # Pull fea_libs.
 fea_fetch_content(fea_libs
@@ -59,8 +59,8 @@ fea_fetch_content(wil
 )
 
 # Pull conan
-fea_pull_conan_debug("-s compiler.runtime=MTd")
-fea_pull_conan_release("-s compiler.runtime=MT")
+fea_pull_conan_debug(CONAN_ARGS "-s compiler.runtime=MTd")
+fea_pull_conan_release(CONAN_ARGS "-s compiler.runtime=MT")
 
 # libwsay MT
 set(LIB_NAME lib${PROJECT_NAME})
@@ -78,6 +78,8 @@ target_include_directories(${LIB_NAME} PRIVATE libsrc) # For based paths.
 
 fea_set_compile_options(${LIB_NAME} PUBLIC)
 set_target_properties(${LIB_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_compile_options(${LIB_NAME} PUBLIC $<$<CONFIG:Release>:/GL>)
+target_link_options(${LIB_NAME} PUBLIC $<$<CONFIG:Release>:/LTCG>)
 
 # Library Install Configuration
 install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}_targets)
@@ -102,6 +104,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThre
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME} fea_libs)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWSAY_VERSION=L"${PROJECT_VERSION}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWIN32_LEAN_AND_MEAN -DWIN32_EXTRA_LEAN -DVC_EXTRALEAN)
+target_compile_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:/GL>)
+target_link_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:/LTCG>)
 
 
 # Tests

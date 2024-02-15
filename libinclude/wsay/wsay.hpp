@@ -1,13 +1,18 @@
 ﻿#pragma once
+#include <cstdint>
+#include <fea/memory/pimpl_ptr.hpp>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace wsy {
-// helpers
-extern bool parse_text_file(
-		const std::filesystem::path& path, std::wstring& out_text);
+
+
+struct voice_options {
+	size_t voice_id = (std::numeric_limits<size_t>::max)();
+};
 
 struct voice_impl;
 struct voice {

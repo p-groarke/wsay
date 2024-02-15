@@ -13,126 +13,9 @@ extern CComModule _Module;
 
 #include <algorithm>
 #include <fea/string/conversions.hpp>
-#include <fea/utils/file.hpp>
 #include <functional>
-#include <wil/resource.h>
-#include <wil/result.h>
 
 namespace wsy {
-namespace {
-using unique_couninitialize_call
-		= wil::unique_call<decltype(&::CoUninitialize), ::CoUninitialize>;
-unique_couninitialize_call cleanup;
-
-std::wstring new_win10_registrykey
-		= L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_"
-		  L"OneCore\\Voices";
-
-
-std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>> get_voices(
-		const wchar_t* registry_key) {
-
-	std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>> ret;
-	CComPtr<IEnumSpObjectTokens> cpEnum;
-
-	if (!SUCCEEDED(SpEnumTokens(registry_key, nullptr, nullptr, &cpEnum))) {
-		return ret;
-	}
-
-	unsigned long num_voices = 0;
-	if (!SUCCEEDED(cpEnum->GetCount(&num_voices))) {
-		return ret;
-	}
-
-	for (size_t i = 0; i < num_voices; ++i) {
-		CComPtr<ISpObjectToken> cpVoiceToken;
-
-		if (!SUCCEEDED(cpEnum->Next(1, &cpVoiceToken, nullptr))) {
-			return ret;
-		}
-
-		LPWSTR str = nullptr;
-		cpVoiceToken->GetStringValue(nullptr, &str);
-
-		ret.push_back({ std::wstring{ str }, std::move(cpVoiceToken) });
-	}
-
-	return ret;
-}
-
-std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
-get_playback_devices() {
-
-	std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>> ret;
-	CComPtr<IEnumSpObjectTokens> cpEnum;
-
-	// Enumerate the available audio output devices.
-	if (!SUCCEEDED(SpEnumTokens(SPCAT_AUDIOOUT, nullptr, nullptr, &cpEnum))) {
-		return ret;
-	}
-
-	unsigned long device_count = 0;
-	// Get the number of audio output devices.
-	if (!SUCCEEDED(cpEnum->GetCount(&device_count))) {
-		return ret;
-	}
-
-	// Obtain a list of available audio output tokens,
-	// set the output to the token, and call Speak.
-	for (size_t i = 0; i < device_count; ++i) {
-		CComPtr<ISpObjectToken> cpAudioOutToken;
-
-		if (!SUCCEEDED(cpEnum->Next(1, &cpAudioOutToken, nullptr))) {
-			return ret;
-		}
-
-		LPWSTR str = nullptr;
-		cpAudioOutToken->GetStringValue(nullptr, &str);
-
-		ret.push_back({ std::wstring{ str }, std::move(cpAudioOutToken) });
-	}
-
-	return ret;
-}
-
-
-} // namespace
-
-
-bool parse_text_file(
-		const std::filesystem::path& path, std::wstring& out_text) {
-
-	if (!std::filesystem::exists(path)) {
-		fwprintf(stderr, L"Input text file doesn't exist : '%s'\n",
-				path.wstring().c_str());
-		return false;
-	}
-
-	if (path.extension() != ".txt") {
-		fwprintf(stderr,
-				L"Text option only supports '.txt' "
-				"files.\n");
-		return false;
-	}
-
-	std::ifstream ifs{ path };
-	if (!ifs.is_open()) {
-		return false;
-	}
-
-	std::u32string text = fea::open_text_file_with_bom(ifs);
-	out_text = fea::utf32_to_utf16_w(text);
-
-	if (out_text.empty()) {
-		fwprintf(stderr,
-				L"Couldn't parse text file or there is no "
-				"text in file.\n");
-		return false;
-	}
-
-	return true;
-}
-
 struct voice_data {
 	// Creates default voice.
 	voice_data(ISpObjectToken* selected_voice, uint16_t vol, int speed) {
@@ -172,13 +55,13 @@ struct voice_data {
 		}
 	}
 
-	voice_data(ISpObjectToken* selected_voice, size_t device_idx,
-			ISpObjectToken* device, uint16_t vol, int speed)
-			: voice_data(selected_voice, vol, speed) {
+	// voice_data(ISpObjectToken* selected_voice, size_t device_idx,
+	//		ISpObjectToken* device, uint16_t vol, int speed)
+	//		: voice_data(selected_voice, vol, speed) {
 
-		device_playback_idx = device_idx;
-		voice_ptr->SetOutput(device, TRUE);
-	}
+	//	device_playback_idx = device_idx;
+	//	voice_ptr->SetOutput(device, TRUE);
+	//}
 
 	bool is_default() const {
 		return device_playback_idx == std::numeric_limits<size_t>::max()
@@ -192,20 +75,20 @@ struct voice_data {
 
 struct voice_impl {
 	voice_impl() {
-		THROW_IF_FAILED_MSG(::CoInitializeEx(nullptr, COINIT_MULTITHREADED),
-				"Couldn't initialize COM.\n");
+		// THROW_IF_FAILED_MSG(::CoInitializeEx(nullptr, COINIT_MULTITHREADED),
+		//		"Couldn't initialize COM.\n");
 
-		available_voices = get_voices(SPCAT_VOICES);
-		{
-			std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
-					extra_voices = get_voices(new_win10_registrykey.c_str());
-			available_voices.insert(available_voices.end(),
-					extra_voices.begin(), extra_voices.end());
-		}
+		// available_voices = get_voices(SPCAT_VOICES);
+		//{
+		//	std::vector<std::pair<std::wstring, CComPtr<ISpObjectToken>>>
+		//			extra_voices = get_voices(win10_extravoices_regkey.c_str());
+		//	available_voices.insert(available_voices.end(),
+		//			extra_voices.begin(), extra_voices.end());
+		// }
 
-		available_devices = get_playback_devices();
+		// available_devices = get_playback_devices();
 
-		voices.push_back(voice_data{ nullptr, 100u, 0 });
+		// voices.push_back(voice_data{ nullptr, 100u, 0 });
 	}
 
 	template <class Func>
