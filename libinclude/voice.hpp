@@ -57,7 +57,7 @@ struct voice {
 
 	void add_output_file(const std::filesystem::path& f) {
 		outputs.push_back(output{
-				.type = output_type_e::device,
+				.type = output_type_e::file,
 				.device_idx = (std::numeric_limits<size_t>::max)(),
 				.file_path = f,
 		});

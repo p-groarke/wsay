@@ -32,7 +32,6 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	std::wstring speech_text = get_pipe_text();
 
 	fea::get_opt<wchar_t> opt;
-
 	opt.add_raw_option(
 			L"sentence",
 			[&](std::wstring&& str) {
