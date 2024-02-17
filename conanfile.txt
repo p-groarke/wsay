@@ -1,11 +1,12 @@
 [requires]
-gtest/1.10.0@_/_
+gtest/1.11.0#7475482232fcd017fa110b0b8b0f936e
 
 [generators]
-cmake_find_package_multi
+CMakeToolchain
+CMakeDeps
 
 [options]
-gtest:build_gmock=False
+gtest/*:build_gmock=False
 
 [imports]
 bin, *.pdb -> ./bin

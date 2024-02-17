@@ -1,6 +1,6 @@
 #include "util.hpp"
 
-#include <fea/terminal/win_term.hpp>
+#include <fea/terminal/utf8.hpp>
 #include <fea/utils/error.hpp>
 #include <fea/utils/file.hpp>
 #include <fea/utils/scope.hpp>
@@ -78,17 +78,12 @@ std::wstring get_clipboard_text() {
 
 std::wstring get_pipe_text() {
 	// To fix pipe input, use U8TEXT (and not U16).
-	int res = _setmode(_fileno(stdin), _O_U8TEXT);
-	res = _setmode(_fileno(stdout), _O_U8TEXT);
-	fea::unused(res);
+	fea::translation_resetter tr
+			= fea::translate_io(fea::translation_mode::u8text);
 
-	fea::on_exit e = []() {
-		// Reset afterwards.
+	fea::on_exit e = [&]() {
+		// Clear and flush pipe.
 		std::wcin.clear();
-
-		int res = _setmode(_fileno(stdin), _O_U16TEXT);
-		res = _setmode(_fileno(stdout), _O_U16TEXT);
-		fea::unused(res);
 	};
 
 	// Check if we have anything in cin.

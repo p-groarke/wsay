@@ -59,10 +59,10 @@ fea_fetch_content(wil
 )
 
 # Pull conan
-fea_pull_conan_debug(CONAN_ARGS "-s compiler.runtime=MTd")
-fea_pull_conan_release(CONAN_ARGS "-s compiler.runtime=MT")
+fea_pull_conan_debug() #CONAN_ARGS "-s compiler.runtime=MTd")
+fea_pull_conan_release() #CONAN_ARGS "-s compiler.runtime=MT")
 
-# libwsay MT
+# libwsay
 set(LIB_NAME lib${PROJECT_NAME})
 file(GLOB_RECURSE LIB_HEADERS "libinclude/*.hpp" "libinclude/*.h" "libinclude/*.tpp")
 file(GLOB_RECURSE LIB_SOURCES "libsrc/*.cpp" "libsrc/*.c" "libsrc/*.hpp" "libsrc/*.h" "libsrc/*.tpp")
@@ -91,7 +91,7 @@ install(EXPORT ${LIB_NAME}_targets
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libinclude/wsay" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 
-# wsay_cmd
+# wsay
 file(GLOB_RECURSE CMDTOOL_SOURCES
 		"src/*.cpp" "src/*.c" "src/*.hpp" "src/*.h" "src/*.tpp"
 )
@@ -109,8 +109,7 @@ target_link_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:/LTCG>)
 
 
 # Tests
-
-if (${WSAY_TESTS})
+if (WSAY_TESTS)
 	enable_testing()
 
 	find_package(GTest CONFIG REQUIRED)
@@ -124,7 +123,7 @@ if (${WSAY_TESTS})
 	add_dependencies(${TEST_NAME} ${PROJECT_NAME})
 
 	fea_set_compile_options(${TEST_NAME} PUBLIC)
-	set_target_properties(${TEST_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	# set_target_properties(${TEST_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 	# Copy test data on build.
 	set(DATA_IN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/data)

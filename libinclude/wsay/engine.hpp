@@ -4,15 +4,16 @@
 #include <vector>
 
 namespace wsy {
+struct voice;
 struct engine_imp;
 struct engine : fea::pimpl_ptr<engine_imp> {
 	engine();
 	~engine();
 
-	engine(const engine&);
-	engine(engine&&);
-	engine& operator=(const engine&);
-	engine& operator=(engine&&);
+	engine(const engine&) = delete;
+	engine(engine&&) = delete;
+	engine& operator=(const engine&) = delete;
+	engine& operator=(engine&&) = delete;
 
 	// Returns the available voices. Use matching indexes when referring to a
 	// voice.
@@ -24,7 +25,7 @@ struct engine : fea::pimpl_ptr<engine_imp> {
 
 	// Speaks the sentence using selected voice to playback outputs and file.
 	// Blocking.
-	void speak(const std::wstring& sentence);
+	void speak(const voice& v, const std::wstring& sentence);
 
 	// Speaks the sentence using selected voice to playback outputs and file.
 	// Non-blocking.
