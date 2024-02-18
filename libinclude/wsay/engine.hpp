@@ -29,11 +29,11 @@ struct engine : fea::pimpl_ptr<engine_imp> {
 
 	// Speaks the sentence using selected voice to playback outputs and file.
 	// Non-blocking.
-	void speak_async(const std::wstring& sentence);
+	void speak_async(const voice& v, const std::wstring& sentence);
 
 	// Interrupts playback speaking.
 	// Doesn't interrupt file ouput.
-	void stop();
+	void stop(const voice& v);
 
 private:
 	const engine_imp& imp() const;

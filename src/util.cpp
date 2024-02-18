@@ -76,32 +76,32 @@ std::wstring get_clipboard_text() {
 	return std::wstring{ clip_text };
 }
 
-std::wstring get_pipe_text() {
-	// To fix pipe input, use U8TEXT (and not U16).
-	fea::translation_resetter tr
-			= fea::translate_io(fea::translation_mode::u8text);
-
-	fea::on_exit e = [&]() {
-		// Clear and flush pipe.
-		std::wcin.clear();
-	};
-
-	// Check if we have anything in cin.
-	std::wcin.seekg(0, std::wcin.end);
-	std::streamoff cin_count = std::wcin.tellg();
-	std::wcin.seekg(0, std::wcin.beg);
-
-	if (cin_count <= 0) {
-		return {};
-	}
-
-	// wprintf(L"Pipe detected, enabling pipe mode.\n");
-	std::wstring ret;
-	std::wstring pipe;
-	while (std::getline(std::wcin, pipe)) {
-		ret.insert(ret.end(), pipe.begin(), pipe.end());
-		ret += L'\n';
-	}
-	// wprintf(L"Pipe text :\n%s\n", ret.c_str());
-	return ret;
-}
+// std::wstring get_pipe_text() {
+//	// To fix pipe input, use U8TEXT (and not U16).
+//	fea::translation_resetter tr
+//			= fea::translate_io(fea::translation_mode::u8text);
+//
+//	fea::on_exit e = [&]() {
+//		// Clear and flush pipe.
+//		std::wcin.clear();
+//	};
+//
+//	// Check if we have anything in cin.
+//	std::wcin.seekg(0, std::wcin.end);
+//	std::streamoff cin_count = std::wcin.tellg();
+//	std::wcin.seekg(0, std::wcin.beg);
+//
+//	if (cin_count <= 0) {
+//		return {};
+//	}
+//
+//	// wprintf(L"Pipe detected, enabling pipe mode.\n");
+//	std::wstring ret;
+//	std::wstring pipe;
+//	while (std::getline(std::wcin, pipe)) {
+//		ret.insert(ret.end(), pipe.begin(), pipe.end());
+//		ret += L'\n';
+//	}
+//	// wprintf(L"Pipe text :\n%s\n", ret.c_str());
+//	return ret;
+// }

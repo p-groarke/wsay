@@ -8,6 +8,3 @@ extern bool parse_text_file(
 
 // If available, returns text in windows clipboard.
 extern std::wstring get_clipboard_text();
-
-// If available, reads and returns pipe text.
-extern std::wstring get_pipe_text();

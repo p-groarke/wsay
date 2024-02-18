@@ -305,8 +305,8 @@ struct out_voice {
 	CComPtr<ISpVoice> voice{};
 };
 
-out_voice make_output_voice(
-		const voice_output& vout, ISpObjectToken* device_token) {
+out_voice make_output_voice(const voice_output& vout,
+		const std::vector<CComPtr<ISpObjectToken>>& device_tokens) {
 	out_voice ret{};
 
 	switch (vout.type) {
@@ -314,19 +314,18 @@ out_voice make_output_voice(
 		assert(vout.device_idx != (std::numeric_limits<size_t>::max)());
 		assert(vout.file_path.empty());
 
-		if (!SUCCEEDED(SpCreateObjectFromToken(device_token, &ret.sys_audio))) {
+		if (!SUCCEEDED(SpCreateObjectFromToken(
+					device_tokens.at(vout.device_idx), &ret.sys_audio))) {
 			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
 					"Couldn't create audio out from token.");
 		}
 
 		// Use default format?
-
 		// CSpStreamFormat audio_fmt;
 		// if (!SUCCEEDED(audio_fmt.AssignFormat(SPSF_44kHz16BitMono))) {
 		//	fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
 		//			"Couldn't set audio format on stream.");
 		// }
-
 		// if (!SUCCEEDED(audio_out->SetFormat(
 		//			audio_fmt.FormatId(), audio_fmt.WaveFormatExPtr()))) {
 		//	fea::maybe_throw<std::runtime_error>(
@@ -344,6 +343,39 @@ out_voice make_output_voice(
 
 	} break;
 	case output_type_e::file: {
+		assert(vout.device_idx == (std::numeric_limits<size_t>::max)());
+		assert(!vout.file_path.empty());
+
+		CSpStreamFormat audio_fmt;
+		if (!SUCCEEDED(audio_fmt.AssignFormat(SPSF_44kHz16BitMono))) {
+			throw std::runtime_error{
+				"Couldn't set file audio format (44kHz, 16bit, mono)."
+			};
+		}
+		if (!SUCCEEDED(SPBindToFile(vout.file_path.c_str(), SPFM_CREATE_ALWAYS,
+					&ret.sp_stream, &audio_fmt.FormatId(),
+					audio_fmt.WaveFormatExPtr()))) {
+			throw std::runtime_error{ "Couldn't bind voice to file." };
+		}
+
+		if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't create output voice.");
+		}
+		if (!SUCCEEDED(ret.voice->SetOutput(ret.sp_stream, false))) {
+			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
+					"Couldn't set output voice audio out.");
+		}
+	} break;
+	case output_type_e::count: {
+		// Default.
+		assert(vout.device_idx == (std::numeric_limits<size_t>::max)());
+		assert(vout.file_path.empty());
+
+		if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't create output voice.");
+		}
 	} break;
 	default: {
 		assert(false);
@@ -413,7 +445,6 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 	// Other voices will play stream to various outputs.
 	tts_voice tts_v
 			= make_tts_voice(vopts, imp().voice_tokens.at(vopts.voice_idx));
-
 	unsigned long flags
 			= SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC | tts_v.flags;
 
@@ -421,25 +452,16 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 		fea::maybe_throw<std::invalid_argument>(
 				__FUNCTION__, __LINE__, "Tts voice couldn't speak.");
 	}
-
-	// tts_v->WaitUntilDone(INFINITE);
-	//   voice->SetOutput(nullptr, false);
-	//   voice->SpeakStream(sp_stream, SPF_DEFAULT, nullptr);
 	std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
 
-	// std::wstring fileout = path.wstring();
-
-	// if (!SUCCEEDED(SPBindToFile(fileout.c_str(), SPFM_CREATE_ALWAYS,
-	// &cpStream, 			&cAudioFmt.FormatId(),
-	// cAudioFmt.WaveFormatExPtr()))) { 	throw
-	// std::runtime_error{ "Couldn't bind stream to file." };
-	// }
-
+	// Create output voices. Either devices or output files.
 	std::vector<out_voice> outputs;
 	for (const voice_output& vout : vopts.outputs) {
-		outputs.push_back(make_output_voice(
-				vout, imp().device_tokens.at(vout.device_idx)));
+		outputs.push_back(make_output_voice(vout, imp().device_tokens));
+	}
+	if (outputs.empty()) {
+		outputs.push_back(make_output_voice({}, imp().device_tokens));
 	}
 
 	for (out_voice& outv : outputs) {
@@ -454,6 +476,9 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 		outv->WaitUntilDone(INFINITE);
 	}
 }
+
+// void engine::speak_async(const voice& v, const std::wstring& sentence) {
+// }
 
 const engine_imp& engine::imp() const {
 	return *_impl;

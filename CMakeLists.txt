@@ -107,6 +107,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE -DWIN32_LEAN_AND_MEAN -DWIN32
 target_compile_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:/GL>)
 target_link_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:/LTCG>)
 
+set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "\"test <silence msec=\\\"500\\\" /> test\"")
 
 # Tests
 if (WSAY_TESTS)
