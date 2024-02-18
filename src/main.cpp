@@ -29,7 +29,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	wsy::engine engine;
 	wsy::voice voice;
 
-	bool interactive_mode = false;
+	// bool interactive_mode = false;
 	std::wstring speech_text = fea::wread_pipe_text();
 
 	fea::get_opt<wchar_t> opt;
@@ -197,7 +197,8 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				voice.sampling_rate = wsy::sampling_rate_e::_8;
 				return true;
 			},
-			L"Degrades audio to make it sound a little more like a radio.");
+			L"Degrades audio to make it sound a little more like a radio.\n"
+			"Note : Radio effects are hit or miss due to obscure reasons.");
 	opt.add_flag_option(
 			L"fxradio2",
 			[&]() {
@@ -206,8 +207,18 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				voice.sampling_rate = wsy::sampling_rate_e::_8;
 				return true;
 			},
-			L"Degrades audio to make it sound a little more like a radio. Note "
-			L": This effect is hit or miss due to obscure reasons.");
+			L"Degrades audio to make it sound a little more like a radio.\n"
+			"Note : Radio effects are hit or miss due to obscure reasons.");
+	// opt.add_flag_option(
+	//		L"fxradio3",
+	//		[&]() {
+	//			voice.compression = wsy::compression_e::none;
+	//			voice.bit_depth = wsy::bit_depth_e::_8;
+	//			voice.sampling_rate = wsy::sampling_rate_e::_11;
+	//			return true;
+	//		},
+	//		L"Degrades audio to make it sound a little more like a radio.\n"
+	//		"Note : Radio effects are hit or miss due to obscure reasons.");
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;

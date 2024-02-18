@@ -19,6 +19,7 @@ extern CComModule _Module;
 #include <fea/numerics/literals.hpp>
 #include <fea/utils/error.hpp>
 #include <fea/utils/throw.hpp>
+#include <iostream>
 #include <string_view>
 #include <thread>
 #include <wil/resource.h>
@@ -289,6 +290,8 @@ tts_voice make_tts_voice(const voice& vopts, ISpObjectToken* voice_token) {
 	{
 		if (vopts.xml_parse) {
 			ret.flags |= SPF_IS_XML;
+		} else {
+			ret.flags |= SPF_IS_NOT_XML;
 		}
 	}
 
@@ -321,16 +324,16 @@ out_voice make_output_voice(const voice_output& vout,
 		}
 
 		// Use default format?
-		// CSpStreamFormat audio_fmt;
-		// if (!SUCCEEDED(audio_fmt.AssignFormat(SPSF_44kHz16BitMono))) {
-		//	fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-		//			"Couldn't set audio format on stream.");
-		// }
-		// if (!SUCCEEDED(audio_out->SetFormat(
-		//			audio_fmt.FormatId(), audio_fmt.WaveFormatExPtr()))) {
-		//	fea::maybe_throw<std::runtime_error>(
-		//			__FUNCTION__, __LINE__, "Couldn't set audio out format.");
-		// }
+		CSpStreamFormat audio_fmt;
+		if (!SUCCEEDED(audio_fmt.AssignFormat(SPSF_44kHz16BitMono))) {
+			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
+					"Couldn't set audio format on stream.");
+		}
+		if (!SUCCEEDED(ret.sys_audio->SetFormat(
+					audio_fmt.FormatId(), audio_fmt.WaveFormatExPtr()))) {
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't set audio out format.");
+		}
 
 		if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
 			fea::maybe_throw<std::runtime_error>(
@@ -445,15 +448,12 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 	// Other voices will play stream to various outputs.
 	tts_voice tts_v
 			= make_tts_voice(vopts, imp().voice_tokens.at(vopts.voice_idx));
-	unsigned long flags
-			= SPF_DEFAULT | SPF_PURGEBEFORESPEAK | SPF_ASYNC | tts_v.flags;
+	unsigned long flags = SPF_DEFAULT | SPF_ASYNC | tts_v.flags;
 
 	if (!SUCCEEDED(tts_v->Speak(sentence.c_str(), flags, nullptr))) {
 		fea::maybe_throw<std::invalid_argument>(
 				__FUNCTION__, __LINE__, "Tts voice couldn't speak.");
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
-
 
 	// Create output voices. Either devices or output files.
 	std::vector<out_voice> outputs;
@@ -464,14 +464,15 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 		outputs.push_back(make_output_voice({}, imp().device_tokens));
 	}
 
+	tts_v->WaitUntilDone(INFINITE);
 	for (out_voice& outv : outputs) {
-		if (!SUCCEEDED(outv->SpeakStream(tts_v.sp_stream, flags, nullptr))) {
+		if (!SUCCEEDED(outv->SpeakStream(
+					tts_v.sp_stream, SPF_DEFAULT | SPF_ASYNC, nullptr))) {
 			fea::maybe_throw<std::runtime_error>(
 					__FUNCTION__, __LINE__, "Couldn't speak output stream.");
 		}
 	}
 
-	tts_v->WaitUntilDone(INFINITE);
 	for (out_voice& outv : outputs) {
 		outv->WaitUntilDone(INFINITE);
 	}
