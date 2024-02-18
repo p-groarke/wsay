@@ -1,4 +1,4 @@
-﻿#include "util.hpp"
+﻿#include "private_include/util.hpp"
 
 // #include <clocale>
 // #include <cstdio>
@@ -29,7 +29,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	wsy::engine engine;
 	wsy::voice voice;
 
-	// bool interactive_mode = false;
+	bool interactive_mode = false;
 	std::wstring speech_text = fea::wread_pipe_text();
 
 	fea::get_opt<wchar_t> opt;
@@ -93,16 +93,16 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			"provided.",
 			L'o');
 
-	// opt.add_flag_option(
-	//		L"interactive",
-	//		[&]() {
-	//			interactive_mode = true;
-	//			return true;
-	//		},
-	//		L"Enter interactive mode. Type sentences, they will be "
-	//		"spoken when you press enter.\nUse 'ctrl+c' or "
-	//		"type '!exit' to quit.",
-	//		L'I');
+	opt.add_flag_option(
+			L"interactive",
+			[&]() {
+				interactive_mode = true;
+				return true;
+			},
+			L"Enter interactive mode. Type sentences, they will be "
+			"spoken when you press enter.\nUse 'ctrl+c' or "
+			"type '!exit' to quit.",
+			L'I');
 
 	opt.add_flag_option(
 			L"list_devices",
@@ -189,39 +189,29 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"special characters that aren't speech xml.",
 			L'X');
 
-	opt.add_flag_option(
-			L"fxradio1",
-			[&]() {
-				voice.compression = wsy::compression_e::alaw;
-				voice.bit_depth = wsy::bit_depth_e::_8;
-				voice.sampling_rate = wsy::sampling_rate_e::_8;
+	opt.add_required_arg_option(
+			L"fxradio",
+			[&](std::wstring&& f) {
+				size_t fx = std::stoul(f) - 1;
+				if (fx >= size_t(wsy::effect_e::count)) {
+					std::wcerr << std::format(
+							L"Selected radio effect out of range. Choose "
+							L"between '1' and '{}'.\n",
+							size_t(wsy::effect_e::count));
+					return false;
+				}
+
+				voice.effect(wsy::effect_e(fx));
 				return true;
 			},
-			L"Degrades audio to make it sound a little more like a radio.\n"
-			"Note : Radio effects are hit or miss due to obscure reasons.");
-	opt.add_flag_option(
-			L"fxradio2",
-			[&]() {
-				voice.compression = wsy::compression_e::gsm610;
-				voice.bit_depth = wsy::bit_depth_e::_8;
-				voice.sampling_rate = wsy::sampling_rate_e::_8;
-				return true;
-			},
-			L"Degrades audio to make it sound a little more like a radio.\n"
-			"Note : Radio effects are hit or miss due to obscure reasons.");
-	// opt.add_flag_option(
-	//		L"fxradio3",
-	//		[&]() {
-	//			voice.compression = wsy::compression_e::none;
-	//			voice.bit_depth = wsy::bit_depth_e::_8;
-	//			voice.sampling_rate = wsy::sampling_rate_e::_11;
-	//			return true;
-	//		},
-	//		L"Degrades audio to make it sound a little more like a radio.\n"
-	//		"Note : Radio effects are hit or miss due to obscure reasons.");
+			std::format(L"Degrades audio to make it sound like a "
+						L"radio.\nSupported values : 1 to {}.\n",
+					size_t(wsy::effect_e::count)),
+			L'r');
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
+	help_outro += L" ALPHA";
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
 	help_outro += L"Philippe Groarke <hello@philippegroarke.com>";
 	opt.add_help_outro(help_outro);
@@ -235,29 +225,31 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 		return -1;
 	}
 
-	// if (interactive_mode) {
-	//	std::wcout << L"[Info] Type sentences, press enter to speak them.\n";
-	//	std::wcout << std::format(
-	//			L"[Command] '{}' : Exit interactive mode.\n", exit_cmd);
-	//	std::wcout << std::format(
-	//			L"[Command] '{}' : Interrupt speaking.\n", shutup_cmd);
-	//	std::wcout << L"\n";
+	if (interactive_mode) {
+		wsy::async_token tok = engine.make_async_token(voice);
 
-	//	std::wstring wsentence;
-	//	while (std::getline(std::wcin, wsentence)) {
-	//		if (wsentence == exit_cmd) {
-	//			break;
-	//		}
+		std::wcout << L"[Info] Type sentences, press enter to speak them.\n";
+		std::wcout << std::format(
+				L"[Command] '{}' : Exit interactive mode.\n", exit_cmd);
+		std::wcout << std::format(
+				L"[Command] '{}' : Interrupt speaking.\n", shutup_cmd);
+		std::wcout << L"\n";
 
-	//		if (wsentence == shutup_cmd) {
-	//			engine.stop_speaking();
-	//			continue;
-	//		}
+		std::wstring wsentence;
+		while (std::getline(std::wcin, wsentence)) {
+			if (wsentence == exit_cmd) {
+				break;
+			}
 
-	//		voice.speak_async(wsentence);
-	//	}
-	//	return 0;
-	//}
+			if (wsentence == shutup_cmd) {
+				engine.stop(tok);
+				continue;
+			}
+
+			engine.speak_async(wsentence, tok);
+		}
+		return 0;
+	}
 
 	engine.speak(voice, speech_text);
 	return 0;

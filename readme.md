@@ -36,6 +36,9 @@ wsay "Hello there."
 # Ouput to a wav file. If no filename is entered, outputs to 'out.wav'.
 wsay "I can output to a wav file." -o
 
+# When using speech xml on the command line, escape double quotes with backslashes.
+wsay "Lets take a little <silence msec=\"500\"/> pause."
+
 # List supported voices. Install new Windows voices for more choices.
 wsay --list_voices
 	1 : Microsoft David Desktop - English (United States)
@@ -98,12 +101,9 @@ wsay "Softly speaking" --volume 25
 # You can set the voice speed, from 0 to 100. 50 is the default speed.
 wsay "Quickly speaking" --speed 75
 
-# Degrade the sound to give a CB / radio feel.
-wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio1
-wsay "3 3 3 Lima Delta, if able input 7 7 0 0 into your transponder." --fxradio2
-
-# When using speech xml on the command line, escape double quotes with backslashes.
-wsay "Lets take a little <silence msec=\"500\"/> pause."
+# Degrade the sound to give a CB / radio feel. There are multiple effects provided.
+wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio 1
+wsay "3 3 3 Lima Delta, if able input 7 7 0 0 into your transponder." --fxradio 2
 
 # If speaking code or text with special characters, you can disable speech xml parsing.
 wsay "<html>Definitely Facebook</html>" --nospeechxml
@@ -128,11 +128,11 @@ Arguments:
 
 Options:
  -c, --clipboard                   Speak currently copied text (the text in your clipboard).
-     --fxradio1                    Degrades audio to make it sound a little more like a radio.
-                                   Note : Radio effects are hit or miss due to obscure reasons.
-     --fxradio2                    Degrades audio to make it sound a little more like a radio.
-                                   Note : Radio effects are hit or miss due to obscure reasons.
+ -r, --fxradio <value>             Degrades audio to make it sound like a radio.
+                                   Supported values : 1 to 6.
  -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
+ -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
+                                   Use 'ctrl+c' or type '!exit' to quit.
  -d, --list_devices                List detected playback devices.
  -l, --list_voices                 Lists available voices.
  -X, --nospeechxml                 Disable speech xml detection. Use this if the text contains special characters that
@@ -148,7 +148,7 @@ Options:
  -h, --help                        Print this help
 
 wsay
-version 1.6.0
+version 1.6.0 ALPHA
 https://github.com/p-groarke/wsay/releases
 Philippe Groarke <hello@philippegroarke.com>
 ```

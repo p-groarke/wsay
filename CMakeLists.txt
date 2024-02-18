@@ -1,6 +1,6 @@
 cmake_policy(SET CMP0091 NEW)
 cmake_minimum_required (VERSION 3.15)
-project(wsay VERSION 1.5.0 LANGUAGES CXX)
+project(wsay VERSION 1.6.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

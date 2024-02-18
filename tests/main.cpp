@@ -1,4 +1,4 @@
-﻿#include "../src/util.hpp"
+﻿#include "../src/private_include/util.hpp"
 
 #include <fea/utils/file.hpp>
 #include <gtest/gtest.h>
