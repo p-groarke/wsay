@@ -78,6 +78,9 @@ size_t default_output_device_idx(
 	}
 
 	// Q : Are there situations where this isn't enough?
+	std::wcout << "Couldn't detect default audio device, using first.\nPlease "
+				  "report this so I can improve default device detection, ty!"
+			   << std::endl;
 	return 0;
 }
 
