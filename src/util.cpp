@@ -93,15 +93,15 @@ const std::wstring paragraph_xml
 		= std::format(L"\n<silence msec=\"{}\"/>", paragraph_silence_msec);
 } // namespace
 
-void add_speech_xml(std::wstring& text) {
-	// First, cleanup.
-	{
-		fea::replace_all_inplace(text, L'\r', L'\n');
-		fea::replace_all_inplace(text, L'\f', L'\n');
-		text = std::regex_replace(text, spaces_re, L" ");
-		text = std::regex_replace(text, line_endings_re, L"\n");
-	}
-
-	// Now, add speech xml.
-	fea::replace_all_inplace(text, L"\n", paragraph_xml);
-}
+// void add_speech_xml(std::wstring& text) {
+//	// First, cleanup.
+//	{
+//		fea::replace_all_inplace(text, L'\r', L'\n');
+//		fea::replace_all_inplace(text, L'\f', L'\n');
+//		text = std::regex_replace(text, spaces_re, L" ");
+//		text = std::regex_replace(text, line_endings_re, L"\n");
+//	}
+//
+//	// Now, add speech xml.
+//	fea::replace_all_inplace(text, L"\n", paragraph_xml);
+// }

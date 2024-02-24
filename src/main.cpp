@@ -183,13 +183,13 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"Also disables text parsing as if calling with '--nosmart'.",
 			L'X');
 
-	opt.add_flag_option(
-			L"nosmart",
-			[&]() {
-				parsetext = false;
-				return true;
-			},
-			L"Disables text parsing and reads text as-is.", L'S');
+	// opt.add_flag_option(
+	//		L"nosmart",
+	//		[&]() {
+	//			parsetext = false;
+	//			return true;
+	//		},
+	//		L"Disables text parsing and reads text as-is.", L'S');
 
 	opt.add_required_arg_option(
 			L"fxradio",
@@ -247,16 +247,16 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				continue;
 			}
 
-			if (parsetext) {
-				add_speech_xml(wsentence);
-			}
+			// if (parsetext) {
+			//	add_speech_xml(wsentence);
+			// }
 			engine.speak_async(wsentence, tok);
 		}
 		return 0;
 	} else {
-		if (parsetext) {
-			add_speech_xml(speech_text);
-		}
+		// if (parsetext) {
+		//	add_speech_xml(speech_text);
+		// }
 		engine.speak(voice, speech_text);
 	}
 

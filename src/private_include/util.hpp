@@ -9,6 +9,6 @@ extern bool parse_text_file(
 // If available, returns text in windows clipboard.
 extern std::wstring get_clipboard_text();
 
-// Applies speech xml to input text.
-// For example, adds silence after paragraphs.
-extern void add_speech_xml(std::wstring& text);
+//// Applies speech xml to input text.
+//// For example, adds silence after paragraphs.
+// extern void add_speech_xml(std::wstring& text);

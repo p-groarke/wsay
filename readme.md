@@ -101,7 +101,7 @@ wsay "Softly speaking" --volume 25
 # You can set the voice speed, from 0 to 100. 50 is the default speed.
 wsay "Quickly speaking" --speed 75
 
-# Degrade the sound to give a CB / radio feel. There are multiple effects provided.
+# Degrade the sound to give a CB / radio feel. Multiple effects are provided.
 wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio 1
 wsay "3 3 3 Lima Delta, if able input 7 7 0 0 into your transponder." --fxradio 2
 
