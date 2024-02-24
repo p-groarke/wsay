@@ -1,19 +1,12 @@
 ﻿#include "private_include/util.hpp"
 
-// #include <clocale>
-// #include <cstdio>
-// #include <fcntl.h>
 #include <fea/getopt/getopt.hpp>
-// #include <fea/serialize/serializer.hpp>
-// #include <fea/string/conversions.hpp>
+#include <fea/terminal/pipe.hpp>
 #include <fea/terminal/utf8.hpp>
 #include <filesystem>
-// #include <io.h>
 #include <format>
 #include <iostream>
 #include <string>
-// #include <wsay/wsay.hpp>
-#include <fea/terminal/pipe.hpp>
 #include <wsay/engine.hpp>
 #include <wsay/voice.hpp>
 
@@ -21,14 +14,13 @@ const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
 int wmain(int argc, wchar_t** argv, wchar_t**) {
-	std::wcout.sync_with_stdio(false);
-	std::wcerr.sync_with_stdio(false);
-	std::wcin.sync_with_stdio(false);
+	fea::fast_iostreams();
 	auto on_exit_reset_term = fea::utf8_terminal(true);
 
 	wsy::engine engine;
 	wsy::voice voice;
 
+	bool parsetext = true;
 	bool interactive_mode = false;
 	std::wstring speech_text = fea::wread_pipe_text();
 
@@ -183,11 +175,21 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"nospeechxml",
 			[&]() {
 				voice.xml_parse = false;
+				parsetext = false;
 				return true;
 			},
 			L"Disable speech xml detection. Use this if the text contains "
-			L"special characters that aren't speech xml.",
+			L"special characters that aren't speech xml.\n"
+			L"Also disables text parsing as if calling with '--nosmart'.",
 			L'X');
+
+	opt.add_flag_option(
+			L"nosmart",
+			[&]() {
+				parsetext = false;
+				return true;
+			},
+			L"Disables text parsing and reads text as-is.", L'S');
 
 	opt.add_required_arg_option(
 			L"fxradio",
@@ -197,7 +199,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 					std::wcerr << std::format(
 							L"Selected radio effect out of range. Choose "
 							L"between '1' and '{}'.\n",
-							size_t(wsy::effect_e::count));
+							wsy::num_radio_fx());
 					return false;
 				}
 
@@ -206,8 +208,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			},
 			std::format(L"Degrades audio to make it sound like a "
 						L"radio.\nSupported values : 1 to {}.\n",
-					size_t(wsy::effect_e::count)),
-			L'r');
+					wsy::num_radio_fx()));
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
@@ -246,11 +247,18 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				continue;
 			}
 
+			if (parsetext) {
+				add_speech_xml(wsentence);
+			}
 			engine.speak_async(wsentence, tok);
 		}
 		return 0;
+	} else {
+		if (parsetext) {
+			add_speech_xml(speech_text);
+		}
+		engine.speak(voice, speech_text);
 	}
 
-	engine.speak(voice, speech_text);
 	return 0;
 }

@@ -2,7 +2,6 @@
 
 #include <fea/utils/file.hpp>
 #include <gtest/gtest.h>
-#include <wsay/wsay.hpp>
 
 namespace {
 std::filesystem::path exe_path;

@@ -1,4 +1,5 @@
 #pragma once
+#include "private_include/com_mmdevice.hpp"
 #include "wsay/voice.hpp"
 
 #define _ATL_APARTMENT_THREADED
@@ -25,7 +26,6 @@ extern CComModule _Module;
 #include <vector>
 #include <wil/resource.h>
 #include <wil/result.h>
-
 
 namespace wsy {
 using namespace fea::literals;
@@ -220,6 +220,7 @@ std::vector<CComPtr<ISpObjectToken>> make_device_tokens() {
 		}
 		ret.push_back(std::move(cpAudioOutToken));
 	}
+
 	return ret;
 }
 
@@ -371,44 +372,9 @@ device_output make_device_output(const voice_output& vout,
 					"Couldn't set output voice audio out.");
 		}
 	} break;
-	case output_type_e::count: {
-		// Default.
-		assert(vout.device_idx == (std::numeric_limits<size_t>::max)());
-		assert(vout.file_path.empty());
-
-		if (!SUCCEEDED(SpCreateDefaultObjectFromCategoryId(
-					SPCAT_AUDIOOUT, &ret.sys_audio))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't create default device token.");
-		}
-
-		if (!SUCCEEDED(ret.sys_audio->SetFormat(
-					audio_fmt.FormatId(), audio_fmt.WaveFormatExPtr()))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't set default device format.");
-		}
-
-		if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't create default device output.");
-		}
-		if (!SUCCEEDED(ret.voice->SetOutput(ret.sys_audio, false))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't set default device output.");
-		}
-
-		// if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
-		//	fea::maybe_throw<std::runtime_error>(
-		//			__FUNCTION__, __LINE__, "Couldn't create output voice.");
-		// }
-
-		// if (!SUCCEEDED(ret.voice->SetOutput(nullptr, false))) {
-		//	fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-		//			"Couldn't set default output on voice.");
-		// }
-	} break;
 	default: {
-		assert(false);
+		fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
+				"Invalid output type. Please report this bug.");
 	} break;
 	}
 
@@ -417,8 +383,8 @@ device_output make_device_output(const voice_output& vout,
 
 void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
 		const std::vector<CComPtr<ISpObjectToken>>& device_tokens,
-		const voice& vopts, tts_voice& tts,
-		std::vector<device_output>& device_outputs) {
+		const std::vector<std::wstring>& device_names, const voice& vopts,
+		tts_voice& tts, std::vector<device_output>& device_outputs) {
 	// Error checking.
 	if (vopts.voice_idx >= voice_tokens.size()) {
 		fea::maybe_throw<std::invalid_argument>(
@@ -449,7 +415,11 @@ void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
 
 	// Make a default voice if we have no outputs.
 	if (device_outputs.empty()) {
-		device_outputs.push_back(make_device_output({}, device_tokens));
+		voice_output vout;
+		vout.type = output_type_e::device;
+		vout.device_idx = default_output_device_idx(device_names);
+
+		device_outputs.push_back(make_device_output(vout, device_tokens));
 	}
 }
 } // namespace wsy

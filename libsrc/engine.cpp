@@ -21,6 +21,8 @@ struct engine_imp {
 			, voice_names(make_names(voice_tokens))
 			, device_tokens(make_device_tokens())
 			, device_names(make_names(device_tokens)) {
+		assert(voice_tokens.size() == voice_names.size());
+		assert(device_tokens.size() == device_names.size());
 	}
 
 	const std::vector<CComPtr<ISpObjectToken>> voice_tokens;
@@ -59,8 +61,8 @@ const std::vector<std::wstring>& engine::devices() const {
 void engine::speak(const voice& vopts, const std::wstring& sentence) {
 	tts_voice tts;
 	std::vector<device_output> device_outputs;
-	make_everything(imp().voice_tokens, imp().device_tokens, vopts, tts,
-			device_outputs);
+	make_everything(imp().voice_tokens, imp().device_tokens, imp().device_names,
+			vopts, tts, device_outputs);
 
 	// Fill the stream with tts.
 	unsigned long flags = SPF_DEFAULT | SPF_ASYNC | tts.flags;
@@ -90,8 +92,8 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 async_token engine::make_async_token(const voice& v) {
 	async_token ret;
 	ret._impl->vopts = v;
-	make_everything(imp().voice_tokens, imp().device_tokens, v, ret._impl->tts,
-			ret._impl->device_outputs);
+	make_everything(imp().voice_tokens, imp().device_tokens, imp().device_names,
+			v, ret._impl->tts, ret._impl->device_outputs);
 	return ret;
 }
 

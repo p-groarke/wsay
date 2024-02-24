@@ -13,7 +13,8 @@ enum class effect_e : uint8_t {
 	radio4,
 	radio5,
 	radio6,
-	count,
+	radiocount,
+	count = radiocount,
 };
 
 enum class compression_e : uint8_t {
@@ -122,4 +123,9 @@ private:
 
 	std::vector<voice_output> _outputs;
 };
+
+inline constexpr size_t num_radio_fx() {
+	return size_t(effect_e::radiocount) - size_t(effect_e::radio1);
+}
+
 } // namespace wsy

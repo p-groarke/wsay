@@ -128,7 +128,7 @@ Arguments:
 
 Options:
  -c, --clipboard                   Speak currently copied text (the text in your clipboard).
- -r, --fxradio <value>             Degrades audio to make it sound like a radio.
+     --fxradio <value>             Degrades audio to make it sound like a radio.
                                    Supported values : 1 to 6.
  -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
  -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
