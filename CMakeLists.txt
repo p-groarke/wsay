@@ -1,6 +1,6 @@
 cmake_policy(SET CMP0091 NEW)
 cmake_minimum_required (VERSION 3.15)
-project(wsay VERSION 1.5.0 LANGUAGES CXX)
+project(wsay VERSION 1.6.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -31,7 +31,7 @@ fea_import_gitignore()
 fea_set_output_dir(${CMAKE_BINARY_DIR}/bin)
 
 # General options
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 
 # Set fea_libs options.
@@ -40,7 +40,7 @@ if (${FEA_LIBS_LOCAL})
 else()
 	set(FEA_TESTS Off CACHE INTERNAL "")
 endif()
-set(FEA_CPP17 On CACHE INTERNAL "")
+set(FEA_CPP20 On CACHE INTERNAL "")
 
 # Pull fea_libs.
 fea_fetch_content(fea_libs
@@ -59,10 +59,10 @@ fea_fetch_content(wil
 )
 
 # Pull conan
-fea_pull_conan_debug("-s compiler.runtime=MTd")
-fea_pull_conan_release("-s compiler.runtime=MT")
+fea_pull_conan_debug() #CONAN_ARGS "-s compiler.runtime=MTd")
+fea_pull_conan_release() #CONAN_ARGS "-s compiler.runtime=MT")
 
-# libwsay MT
+# libwsay
 set(LIB_NAME lib${PROJECT_NAME})
 file(GLOB_RECURSE LIB_HEADERS "libinclude/*.hpp" "libinclude/*.h" "libinclude/*.tpp")
 file(GLOB_RECURSE LIB_SOURCES "libsrc/*.cpp" "libsrc/*.c" "libsrc/*.hpp" "libsrc/*.h" "libsrc/*.tpp")
@@ -78,6 +78,8 @@ target_include_directories(${LIB_NAME} PRIVATE libsrc) # For based paths.
 
 fea_set_compile_options(${LIB_NAME} PUBLIC)
 set_target_properties(${LIB_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_compile_options(${LIB_NAME} PUBLIC $<$<CONFIG:Release>:/GL>)
+target_link_options(${LIB_NAME} PUBLIC $<$<CONFIG:Release>:/LTCG>)
 
 # Library Install Configuration
 install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}_targets)
@@ -89,10 +91,12 @@ install(EXPORT ${LIB_NAME}_targets
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libinclude/wsay" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 
-# wsay_cmd
-file(GLOB_RECURSE CMDTOOL_SOURCES "src_cmd/*.cpp" "src_cmd/*.c" "src_cmd/*.hpp" "src_cmd/*.h" "src_cmd/*.tpp")
+# wsay
+file(GLOB_RECURSE CMDTOOL_SOURCES
+		"src/*.cpp" "src/*.c" "src/*.hpp" "src/*.h" "src/*.tpp"
+)
 add_executable(${PROJECT_NAME} ${CMDTOOL_SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE src_cmd) # For based paths.
+target_include_directories(${PROJECT_NAME} PRIVATE src) # For based paths.
 
 fea_set_compile_options(${PROJECT_NAME} PUBLIC)
 set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -100,29 +104,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThre
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME} fea_libs)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWSAY_VERSION=L"${PROJECT_VERSION}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DWIN32_LEAN_AND_MEAN -DWIN32_EXTRA_LEAN -DVC_EXTRALEAN)
+target_compile_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:/GL>)
+target_link_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:/LTCG>)
 
-
-# wsay_gui
-find_package(nuklear CONFIG REQUIRED)
-find_package(glfw CONFIG REQUIRED)
-find_package(glad CONFIG REQUIRED)
-set(GUITOOL_NAME ${PROJECT_NAME}_gui)
-file(GLOB_RECURSE GUITOOL_SOURCES "src_gui/*.cpp" "src_gui/*.c" "src_gui/*.hpp" "src_gui/*.h" "src_gui/*.tpp")
-add_executable(${GUITOOL_NAME} WIN32 ${GUITOOL_SOURCES})
-target_include_directories(${GUITOOL_NAME} PRIVATE src_gui) # For based paths.
-
-fea_set_compile_options(${GUITOOL_NAME} PUBLIC)
-set_target_properties(${GUITOOL_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${GUITOOL_NAME})
-target_compile_definitions(${GUITOOL_NAME} PRIVATE -DWSAY_VERSION="${PROJECT_VERSION}")
-target_link_libraries(${GUITOOL_NAME} PRIVATE ${LIB_NAME} nuklear::nuklear glfw::glfw glad::glad)
-
-
+set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "\"test <silence msec=\\\"500\\\" /> test\"")
 
 # Tests
-
-if (${WSAY_TESTS})
+if (WSAY_TESTS)
 	enable_testing()
 
 	find_package(GTest CONFIG REQUIRED)
@@ -136,7 +124,7 @@ if (${WSAY_TESTS})
 	add_dependencies(${TEST_NAME} ${PROJECT_NAME})
 
 	fea_set_compile_options(${TEST_NAME} PUBLIC)
-	set_target_properties(${TEST_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	# set_target_properties(${TEST_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 	# Copy test data on build.
 	set(DATA_IN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/data)

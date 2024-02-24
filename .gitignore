@@ -336,3 +336,7 @@ __pycache__/
 
 # OpenCover UI analysis results
 OpenCover/
+
+# Conan generated
+CMakeUserPresets.json
+conan_imports_manifest.txt

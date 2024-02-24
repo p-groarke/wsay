@@ -9,7 +9,7 @@ Simple command line text-to-speech with easy file output, voice selection and mo
 - Output to wav file.
 - Supports playback from text files, clipboard and pipes.
 - Select different voices (including new Windows 10 voices).
-- Supports [speech xml](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ms717077(v=vs.85)) (text file mode only).
+- Supports [speech xml](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ms717077(v=vs.85)).
 - Supports selecting playback device.
 - Supports multiple simultaneous playback devices and file output.
 - Full unicode (utf8) support (supports asian languages, Slovak, etc).
@@ -18,6 +18,7 @@ Simple command line text-to-speech with easy file output, voice selection and mo
 - Supports utf8, utf16le and utf16be text files.
 - Interactive mode.
 - Volume and speed options.
+- Radio effects for flight sims and such.
 
 
 ## Install Instructions
@@ -34,6 +35,9 @@ wsay "Hello there."
 
 # Ouput to a wav file. If no filename is entered, outputs to 'out.wav'.
 wsay "I can output to a wav file." -o
+
+# When using speech xml on the command line, escape double quotes with backslashes.
+wsay "Lets take a little <silence msec=\"500\"/> pause."
 
 # List supported voices. Install new Windows voices for more choices.
 wsay --list_voices
@@ -97,6 +101,13 @@ wsay "Softly speaking" --volume 25
 # You can set the voice speed, from 0 to 100. 50 is the default speed.
 wsay "Quickly speaking" --speed 75
 
+# Degrade the sound to give a CB / radio feel. There are multiple effects provided.
+wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio 1
+wsay "3 3 3 Lima Delta, if able input 7 7 0 0 into your transponder." --fxradio 2
+
+# If speaking code or text with special characters, you can disable speech xml parsing.
+wsay "<html>Definitely Facebook</html>" --nospeechxml
+
 # Here, we are using voice 6, reading text from a file and outputting to 'output.wav'.
 wsay -v 6 -i mix_and_match_options.txt -o output.wav
 
@@ -117,11 +128,15 @@ Arguments:
 
 Options:
  -c, --clipboard                   Speak currently copied text (the text in your clipboard).
+ -r, --fxradio <value>             Degrades audio to make it sound like a radio.
+                                   Supported values : 1 to 6.
  -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
  -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
                                    Use 'ctrl+c' or type '!exit' to quit.
  -d, --list_devices                List detected playback devices.
  -l, --list_voices                 Lists available voices.
+ -X, --nospeechxml                 Disable speech xml detection. Use this if the text contains special characters that
+                                   aren't speech xml.
  -o, --output_file <optional>      Outputs to wav file. Uses 'out.wav' if no filename is provided.
  -p, --playback_device <multiple>  Specify a playback device. Use the number provided by --list_devices.
                                    You can provide more than 1 playback device, seperate the numbers with spaces. You
@@ -133,7 +148,7 @@ Options:
  -h, --help                        Print this help
 
 wsay
-version 1.5.0
+version 1.6.0 ALPHA
 https://github.com/p-groarke/wsay/releases
 Philippe Groarke <hello@philippegroarke.com>
 ```
