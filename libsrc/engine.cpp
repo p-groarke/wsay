@@ -109,8 +109,8 @@ void engine::speak_async(const std::wstring& sentence, async_token& t) {
 
 	// Play the stream on all output devices.
 	for (device_output& outv : tok.device_outputs) {
-		if (!SUCCEEDED(outv->SpeakStream(
-					outv.sp_stream_clone, SPF_DEFAULT | SPF_ASYNC, nullptr))) {
+		if (!SUCCEEDED(outv->SpeakStream(outv.sp_stream_clone,
+					SPF_DEFAULT | SPF_ASYNC | SPF_PURGEBEFORESPEAK, nullptr))) {
 			fea::maybe_throw<std::runtime_error>(
 					__FUNCTION__, __LINE__, "Couldn't speak output stream.");
 		}

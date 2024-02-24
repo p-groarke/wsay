@@ -179,8 +179,8 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				return true;
 			},
 			L"Disable speech xml detection. Use this if the text contains "
-			L"special characters that aren't speech xml.\n"
-			L"Also disables text parsing as if calling with '--nosmart'.",
+			L"special characters that aren't speech xml.\n",
+			// L"Also disables text parsing as if calling with '--nosmart'.",
 			L'X');
 
 	// opt.add_flag_option(

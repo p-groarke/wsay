@@ -425,6 +425,8 @@ void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
 	}
 }
 
+// Clones input tts stream into device output streams.
+// Clones have same bytes but independent playhead.
 void clone_input_stream(
 		const tts_voice& tts, std::vector<device_output>& device_outputs) {
 	GUID fmt_guid{};

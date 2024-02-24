@@ -103,7 +103,7 @@ wsay "Quickly speaking" --speed 75
 
 # Degrade the sound to give a CB / radio feel. Multiple effects are provided.
 wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio 1
-wsay "3 3 3 Lima Delta, if able input 7 7 0 0 into your transponder." --fxradio 2
+wsay "3 3 3 Lima Delta, if able input 7 7 0 0 into your transponder." --fxradio 6
 
 # If speaking code or text with special characters, you can disable speech xml parsing.
 wsay "<html>Definitely Facebook</html>" --nospeechxml
