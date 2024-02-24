@@ -1,4 +1,5 @@
 #pragma once
+#include "private_include/com_mmdevice.hpp"
 #include "wsay/voice.hpp"
 
 #define _ATL_APARTMENT_THREADED
@@ -25,7 +26,6 @@ extern CComModule _Module;
 #include <vector>
 #include <wil/resource.h>
 #include <wil/result.h>
-
 
 namespace wsy {
 using namespace fea::literals;
@@ -61,7 +61,9 @@ struct device_output {
 		return voice.operator->();
 	}
 
-	CComPtr<ISpStream> sp_stream{};
+	CComPtr<IStream> data_stream_clone{};
+	CComPtr<ISpStream> sp_stream_clone{};
+	CComPtr<ISpStream> file_stream{};
 	CComPtr<ISpMMSysAudio> sys_audio;
 	CComPtr<ISpVoice> voice{};
 };
@@ -220,6 +222,7 @@ std::vector<CComPtr<ISpObjectToken>> make_device_tokens() {
 		}
 		ret.push_back(std::move(cpAudioOutToken));
 	}
+
 	return ret;
 }
 
@@ -357,7 +360,7 @@ device_output make_device_output(const voice_output& vout,
 		assert(!vout.file_path.empty());
 
 		if (!SUCCEEDED(SPBindToFile(vout.file_path.c_str(), SPFM_CREATE_ALWAYS,
-					&ret.sp_stream, &audio_fmt.FormatId(),
+					&ret.file_stream, &audio_fmt.FormatId(),
 					audio_fmt.WaveFormatExPtr()))) {
 			throw std::runtime_error{ "Couldn't bind voice to file." };
 		}
@@ -366,49 +369,14 @@ device_output make_device_output(const voice_output& vout,
 			fea::maybe_throw<std::runtime_error>(
 					__FUNCTION__, __LINE__, "Couldn't create output voice.");
 		}
-		if (!SUCCEEDED(ret.voice->SetOutput(ret.sp_stream, false))) {
+		if (!SUCCEEDED(ret.voice->SetOutput(ret.file_stream, false))) {
 			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
 					"Couldn't set output voice audio out.");
 		}
 	} break;
-	case output_type_e::count: {
-		// Default.
-		assert(vout.device_idx == (std::numeric_limits<size_t>::max)());
-		assert(vout.file_path.empty());
-
-		if (!SUCCEEDED(SpCreateDefaultObjectFromCategoryId(
-					SPCAT_AUDIOOUT, &ret.sys_audio))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't create default device token.");
-		}
-
-		if (!SUCCEEDED(ret.sys_audio->SetFormat(
-					audio_fmt.FormatId(), audio_fmt.WaveFormatExPtr()))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't set default device format.");
-		}
-
-		if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't create default device output.");
-		}
-		if (!SUCCEEDED(ret.voice->SetOutput(ret.sys_audio, false))) {
-			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-					"Couldn't set default device output.");
-		}
-
-		// if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
-		//	fea::maybe_throw<std::runtime_error>(
-		//			__FUNCTION__, __LINE__, "Couldn't create output voice.");
-		// }
-
-		// if (!SUCCEEDED(ret.voice->SetOutput(nullptr, false))) {
-		//	fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
-		//			"Couldn't set default output on voice.");
-		// }
-	} break;
 	default: {
-		assert(false);
+		fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
+				"Invalid output type. Please report this bug.");
 	} break;
 	}
 
@@ -417,8 +385,8 @@ device_output make_device_output(const voice_output& vout,
 
 void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
 		const std::vector<CComPtr<ISpObjectToken>>& device_tokens,
-		const voice& vopts, tts_voice& tts,
-		std::vector<device_output>& device_outputs) {
+		const std::vector<std::wstring>& device_names, const voice& vopts,
+		tts_voice& tts, std::vector<device_output>& device_outputs) {
 	// Error checking.
 	if (vopts.voice_idx >= voice_tokens.size()) {
 		fea::maybe_throw<std::invalid_argument>(
@@ -449,7 +417,42 @@ void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
 
 	// Make a default voice if we have no outputs.
 	if (device_outputs.empty()) {
-		device_outputs.push_back(make_device_output({}, device_tokens));
+		voice_output vout;
+		vout.type = output_type_e::device;
+		vout.device_idx = default_output_device_idx(device_names);
+
+		device_outputs.push_back(make_device_output(vout, device_tokens));
+	}
+}
+
+// Clones input tts stream into device output streams.
+// Clones have same bytes but independent playhead.
+void clone_input_stream(
+		const tts_voice& tts, std::vector<device_output>& device_outputs) {
+	GUID fmt_guid{};
+	wil::unique_cotaskmem_ptr<WAVEFORMATEX> wave_fmt;
+	if (!SUCCEEDED(tts.sp_stream->GetFormat(
+				&fmt_guid, wil::out_param(wave_fmt)))) {
+		fea::maybe_throw<std::runtime_error>(
+				__FUNCTION__, __LINE__, "Couldn't get input stream format.");
+	}
+
+	for (device_output& outv : device_outputs) {
+		if (!SUCCEEDED(tts.data_stream->Clone(&outv.data_stream_clone))) {
+			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
+					"Couldn't clone input data stream format.");
+		}
+
+		if (!SUCCEEDED(outv.sp_stream_clone.CoCreateInstance(CLSID_SpStream))) {
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't create clone sp stream.");
+		}
+
+		if (!SUCCEEDED(outv.sp_stream_clone->SetBaseStream(
+					outv.data_stream_clone, fmt_guid, wave_fmt.get()))) {
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't set clone base stream.");
+		}
 	}
 }
 } // namespace wsy

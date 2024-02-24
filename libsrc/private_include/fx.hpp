@@ -215,49 +215,6 @@ void fx(const voice& vopts, std::span<float> samples) {
 		std::fill(samples.begin() + last_idx + 1, samples.end(), last_s);
 	}
 }
-
-// template <effect_e FX>
-// void fx(const voice& vopts, std::span<float> samples) {
-//	if constexpr (FX == effect_e::radio1) {
-//		constexpr size_t bit_depth = 5;
-//		constexpr sampling_rate_e sampling_rate = sampling_rate_e::_8;
-//		constexpr float dist_drive = 0.2f;
-//		const float dist_norm = distortion_norm<dist_drive>();
-//		constexpr float noise_volume = 0.00001f;
-//	} else if constexpr (FX == effect_e::radio2) {
-//		constexpr size_t bit_depth = 6;
-//		constexpr sampling_rate_e sampling_rate = sampling_rate_e::_8;
-//		constexpr float dist_drive = 0.f;
-//		const float dist_norm = distortion_norm<dist_drive>();
-//		constexpr float noise_volume = 0.01f;
-//	}
-// }
-
-// void radio2_fx(const voice& vopts, std::span<float> samples) {
-//
-//	// We only process samples that will be kept by resampling.
-//	const size_t idx_range
-//			= to_value(vopts.sampling_rate()) / to_value(sampling_rate);
-//	const size_t loop_remainder = samples.size() % idx_range;
-//
-//	for (size_t i = 0; i < samples.size() - loop_remainder; i += idx_range) {
-//		float& s = samples[i];
-//		s = white_noise<noise_volume>(s);
-//		s = bit_crush<bit_depth>(s);
-//		s = distort<dist_drive>(dist_norm, s);
-//
-//		std::fill(samples.begin() + i + 1, samples.begin() + i + idx_range, s);
-//	}
-//
-//	// Process remainder.
-//	size_t last_idx = samples.size() - loop_remainder;
-//	if (last_idx < samples.size()) {
-//		float last_s = samples[last_idx];
-//		last_s = bit_crush<bit_depth>(last_s);
-//		last_s = distort<dist_drive>(dist_norm, last_s);
-//		std::fill(samples.begin() + last_idx + 1, samples.end(), last_s);
-//	}
-// }
 } // namespace detail
 
 void process_fx(const voice& vopts, CComPtr<IStream>& stream,
