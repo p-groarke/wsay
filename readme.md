@@ -65,7 +65,7 @@ wsay -c
 echo Speaking from pipe. | wsay
 
 # Pipe in a file.
-wsay < "some_file.txt"
+wsay < "i_can_read_a_text_file.txt"
 
 # In interactive mode, type sentences and press enter for them to be read.
 # Use !exit to quit.

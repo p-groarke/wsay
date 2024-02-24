@@ -61,7 +61,9 @@ struct device_output {
 		return voice.operator->();
 	}
 
-	CComPtr<ISpStream> sp_stream{};
+	CComPtr<IStream> data_stream_clone{};
+	CComPtr<ISpStream> sp_stream_clone{};
+	CComPtr<ISpStream> file_stream{};
 	CComPtr<ISpMMSysAudio> sys_audio;
 	CComPtr<ISpVoice> voice{};
 };
@@ -358,7 +360,7 @@ device_output make_device_output(const voice_output& vout,
 		assert(!vout.file_path.empty());
 
 		if (!SUCCEEDED(SPBindToFile(vout.file_path.c_str(), SPFM_CREATE_ALWAYS,
-					&ret.sp_stream, &audio_fmt.FormatId(),
+					&ret.file_stream, &audio_fmt.FormatId(),
 					audio_fmt.WaveFormatExPtr()))) {
 			throw std::runtime_error{ "Couldn't bind voice to file." };
 		}
@@ -367,7 +369,7 @@ device_output make_device_output(const voice_output& vout,
 			fea::maybe_throw<std::runtime_error>(
 					__FUNCTION__, __LINE__, "Couldn't create output voice.");
 		}
-		if (!SUCCEEDED(ret.voice->SetOutput(ret.sp_stream, false))) {
+		if (!SUCCEEDED(ret.voice->SetOutput(ret.file_stream, false))) {
 			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
 					"Couldn't set output voice audio out.");
 		}
@@ -420,6 +422,35 @@ void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
 		vout.device_idx = default_output_device_idx(device_names);
 
 		device_outputs.push_back(make_device_output(vout, device_tokens));
+	}
+}
+
+void clone_input_stream(
+		const tts_voice& tts, std::vector<device_output>& device_outputs) {
+	GUID fmt_guid{};
+	wil::unique_cotaskmem_ptr<WAVEFORMATEX> wave_fmt;
+	if (!SUCCEEDED(tts.sp_stream->GetFormat(
+				&fmt_guid, wil::out_param(wave_fmt)))) {
+		fea::maybe_throw<std::runtime_error>(
+				__FUNCTION__, __LINE__, "Couldn't get input stream format.");
+	}
+
+	for (device_output& outv : device_outputs) {
+		if (!SUCCEEDED(tts.data_stream->Clone(&outv.data_stream_clone))) {
+			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
+					"Couldn't clone input data stream format.");
+		}
+
+		if (!SUCCEEDED(outv.sp_stream_clone.CoCreateInstance(CLSID_SpStream))) {
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't create clone sp stream.");
+		}
+
+		if (!SUCCEEDED(outv.sp_stream_clone->SetBaseStream(
+					outv.data_stream_clone, fmt_guid, wave_fmt.get()))) {
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't set clone base stream.");
+		}
 	}
 }
 } // namespace wsy
