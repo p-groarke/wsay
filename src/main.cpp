@@ -180,16 +180,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			},
 			L"Disable speech xml detection. Use this if the text contains "
 			L"special characters that aren't speech xml.\n",
-			// L"Also disables text parsing as if calling with '--nosmart'.",
 			L'X');
-
-	// opt.add_flag_option(
-	//		L"nosmart",
-	//		[&]() {
-	//			parsetext = false;
-	//			return true;
-	//		},
-	//		L"Disables text parsing and reads text as-is.", L'S');
 
 	opt.add_required_arg_option(
 			L"fxradio",
@@ -247,16 +238,10 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				continue;
 			}
 
-			// if (parsetext) {
-			//	add_speech_xml(wsentence);
-			// }
 			engine.speak_async(wsentence, tok);
 		}
 		return 0;
 	} else {
-		// if (parsetext) {
-		//	add_speech_xml(speech_text);
-		// }
 		engine.speak(voice, speech_text);
 	}
 
