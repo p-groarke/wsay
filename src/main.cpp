@@ -203,7 +203,6 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
-	help_outro += L" ALPHA";
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
 	help_outro += L"Philippe Groarke <hello@philippegroarke.com>";
 	opt.add_help_outro(help_outro);
