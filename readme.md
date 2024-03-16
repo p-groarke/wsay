@@ -4,6 +4,7 @@ Windows equivalent of macOS `say`.
 
 Simple command line text-to-speech with easy file output, voice selection and more.
 
+[download latest](https://github.com/p-groarke/wsay/releases/latest)
 
 ## Features
 - Output to wav file.
@@ -148,7 +149,7 @@ Options:
  -h, --help                        Print this help
 
 wsay
-version 1.6.0 ALPHA
+version 1.6.0
 https://github.com/p-groarke/wsay/releases
 Philippe Groarke <hello@philippegroarke.com>
 ```
