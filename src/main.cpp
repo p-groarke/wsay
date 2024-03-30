@@ -212,9 +212,8 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			[&](std::wstring&& f) {
 				size_t fx = std::stoul(f) - 1;
 				if (fx >= size_t(wsy::effect_e::count)) {
-					std::wcerr << std::format(
-							L"Selected radio effect out of range. Choose "
-							L"between '1' and '{}'.\n",
+					std::wcerr << std::format(L"--fxradio only supports values "
+											  L"between 1 and {}.\n",
 							wsy::num_radio_fx());
 					return false;
 				}
