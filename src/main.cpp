@@ -235,7 +235,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 					return false;
 				}
 
-				voice.effect(wsy::radio_effect_e(fx));
+				voice.radio_effect(wsy::radio_effect_e(fx));
 				return true;
 			},
 			std::format(L"Degrades audio to make it sound like a "
@@ -247,8 +247,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				voice.radio_effect_disable_whitenoise = true;
 				return true;
 			},
-			L"Disables background noise when using --fxradio. Ignored "
-			L"otherwise.\n");
+			L"Disables background noise when using --fxradio.\n");
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;

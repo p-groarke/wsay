@@ -89,19 +89,19 @@ struct voice {
 	bool radio_effect_disable_whitenoise = false;
 	size_t voice_idx = 0;
 
-	void effect(radio_effect_e fx) {
-		_effect = fx;
+	void radio_effect(radio_effect_e fx) {
+		_radio_effect = fx;
 		_compression = compression_e::none;
 		_bit_depth = bit_depth_e::_16;
 		_sampling_rate = sampling_rate_e::_44;
 	}
-	radio_effect_e effect() const {
-		return _effect;
+	radio_effect_e radio_effect() const {
+		return _radio_effect;
 	}
 
 	void compression(compression_e comp) {
 		assert(comp != compression_e::count);
-		_effect = radio_effect_e::count;
+		_radio_effect = radio_effect_e::count;
 		_compression = comp;
 	}
 	compression_e compression() const {
@@ -110,7 +110,7 @@ struct voice {
 
 	void bit_depth(bit_depth_e bd) {
 		assert(bd != bit_depth_e::count);
-		_effect = radio_effect_e::count;
+		_radio_effect = radio_effect_e::count;
 		_bit_depth = bd;
 	}
 	bit_depth_e bit_depth() const {
@@ -119,7 +119,7 @@ struct voice {
 
 	void sampling_rate(sampling_rate_e sr) {
 		assert(sr != sampling_rate_e::count);
-		_effect = radio_effect_e::count;
+		_radio_effect = radio_effect_e::count;
 		_sampling_rate = sr;
 	}
 	sampling_rate_e sampling_rate() const {
@@ -146,13 +146,15 @@ struct voice {
 	}
 
 private:
-	// friend struct engine;
-	radio_effect_e _effect = radio_effect_e::count; // if set, supersedes audio
-													// settings.
+	// If set, supersedes audio settings.
+	radio_effect_e _radio_effect = radio_effect_e::count;
+
+	// Audio settings.
 	compression_e _compression = compression_e::none;
 	bit_depth_e _bit_depth = bit_depth_e::_16;
 	sampling_rate_e _sampling_rate = sampling_rate_e::_44;
 
+	// Audio outputs.
 	std::vector<voice_output> _outputs;
 };
 

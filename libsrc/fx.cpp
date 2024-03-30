@@ -236,7 +236,7 @@ void fx(const voice& vopts, std::span<float> samples) {
 void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 		std::vector<std::byte>& byte_buffer,
 		std::vector<float>& sample_buffer) {
-	if (vopts.effect() == radio_effect_e::count) {
+	if (vopts.radio_effect() == radio_effect_e::count) {
 		return;
 	}
 
@@ -284,7 +284,7 @@ void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 	// Process samples.
 	fea::static_for<size_t(radio_effect_e::count)>([&](auto const_i) {
 		constexpr radio_effect_e fx_e = radio_effect_e(size_t(const_i));
-		if (fx_e == vopts.effect()) {
+		if (fx_e == vopts.radio_effect()) {
 			if (vopts.radio_effect_disable_whitenoise) {
 				fx<fx_e, true>(vopts, { sample_buffer });
 			} else {
