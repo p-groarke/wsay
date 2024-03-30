@@ -36,20 +36,14 @@
 #include <vector>
 
 namespace wsy {
-enum class effect_e : uint8_t {
+enum class radio_effect_e : uint8_t {
 	radio1,
 	radio2,
 	radio3,
 	radio4,
 	radio5,
 	radio6,
-	radio7,
-	radio8,
-	radio9,
-	radio10,
-	radio11,
-	radiocount,
-	count = radiocount,
+	count,
 };
 
 enum class compression_e : uint8_t {
@@ -92,21 +86,22 @@ struct voice {
 	uint8_t speed = 50; // 0-100
 	uint8_t pitch = 10; // 0-20
 	bool xml_parse = true;
+	bool radio_effect_disable_whitenoise = false;
 	size_t voice_idx = 0;
 
-	void effect(effect_e fx) {
+	void effect(radio_effect_e fx) {
 		_effect = fx;
 		_compression = compression_e::none;
 		_bit_depth = bit_depth_e::_16;
 		_sampling_rate = sampling_rate_e::_44;
 	}
-	effect_e effect() const {
+	radio_effect_e effect() const {
 		return _effect;
 	}
 
 	void compression(compression_e comp) {
 		assert(comp != compression_e::count);
-		_effect = effect_e::count;
+		_effect = radio_effect_e::count;
 		_compression = comp;
 	}
 	compression_e compression() const {
@@ -115,7 +110,7 @@ struct voice {
 
 	void bit_depth(bit_depth_e bd) {
 		assert(bd != bit_depth_e::count);
-		_effect = effect_e::count;
+		_effect = radio_effect_e::count;
 		_bit_depth = bd;
 	}
 	bit_depth_e bit_depth() const {
@@ -124,7 +119,7 @@ struct voice {
 
 	void sampling_rate(sampling_rate_e sr) {
 		assert(sr != sampling_rate_e::count);
-		_effect = effect_e::count;
+		_effect = radio_effect_e::count;
 		_sampling_rate = sr;
 	}
 	sampling_rate_e sampling_rate() const {
@@ -152,7 +147,8 @@ struct voice {
 
 private:
 	// friend struct engine;
-	effect_e _effect = effect_e::count; // if set, supersedes audio settings.
+	radio_effect_e _effect = radio_effect_e::count; // if set, supersedes audio
+													// settings.
 	compression_e _compression = compression_e::none;
 	bit_depth_e _bit_depth = bit_depth_e::_16;
 	sampling_rate_e _sampling_rate = sampling_rate_e::_44;
@@ -161,7 +157,7 @@ private:
 };
 
 inline constexpr size_t num_radio_fx() {
-	return size_t(effect_e::radiocount) - size_t(effect_e::radio1);
+	return size_t(radio_effect_e::count) - size_t(radio_effect_e::radio1);
 }
 
 } // namespace wsy

@@ -10,6 +10,14 @@
 #include <wsay/engine.hpp>
 #include <wsay/voice.hpp>
 
+/*
+TODO :
+--language (where are LANGIDs defined?)
+https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ms717077(v=vs.85)
+https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ee125675(v=vs.85)
+
+*/
+
 const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
@@ -220,19 +228,27 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"fxradio",
 			[&](std::wstring&& f) {
 				size_t fx = std::stoul(f) - 1;
-				if (fx >= size_t(wsy::effect_e::count)) {
+				if (fx >= size_t(wsy::radio_effect_e::count)) {
 					std::wcerr << std::format(L"--fxradio only supports values "
 											  L"between 1 and {}.\n",
 							wsy::num_radio_fx());
 					return false;
 				}
 
-				voice.effect(wsy::effect_e(fx));
+				voice.effect(wsy::radio_effect_e(fx));
 				return true;
 			},
 			std::format(L"Degrades audio to make it sound like a "
 						L"radio.\nSupported values : 1 to {}.\n",
 					wsy::num_radio_fx()));
+	opt.add_flag_option(
+			L"fxradiononoise",
+			[&]() {
+				voice.radio_effect_disable_whitenoise = true;
+				return true;
+			},
+			L"Disables background noise when using --fxradio. Ignored "
+			L"otherwise.\n");
 
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;

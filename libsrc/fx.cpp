@@ -111,7 +111,11 @@ template <float Vol>
 	static std::mt19937 gen{ rd() };
 	static std::uniform_real_distribution<> dis(-global_vol, global_vol);
 
-	return (sample * (1.f - Vol)) + (float(dis(gen)) * Vol);
+	if constexpr (Vol == 0.f) {
+		return sample;
+	} else {
+		return (sample * (1.f - Vol)) + (float(dis(gen)) * Vol);
+	}
 }
 
 struct fx_args {
@@ -122,7 +126,7 @@ struct fx_args {
 	bool noise_after_bitcrush;
 };
 
-inline constexpr fea::enum_array<fx_args, effect_e> effect_args{
+inline constexpr fea::enum_array<fx_args, radio_effect_e> effect_args{
 	// radio 1
 	fx_args{
 			.bit_depth = 5,
@@ -169,53 +173,31 @@ inline constexpr fea::enum_array<fx_args, effect_e> effect_args{
 			.sampling_rate = sampling_rate_e::_44,
 			.dist_drive = 0.f,
 			.noise_vol = 0.f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 7 -> radio 1 no whitenoise
-	fx_args{
-			.bit_depth = 5,
-			.sampling_rate = sampling_rate_e::_8,
-			.dist_drive = 0.2f,
-			.noise_vol = 0.f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 8 -> radio 2 no whitenoise
-	fx_args{
-			.bit_depth = 6,
-			.sampling_rate = sampling_rate_e::_8,
-			.dist_drive = 0.f,
-			.noise_vol = 0.f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 9 -> radio 3 no whitenoise
-	fx_args{
-			.bit_depth = 16,
-			.sampling_rate = sampling_rate_e::_44,
-			.dist_drive = 1.f,
-			.noise_vol = 0.f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 10 -> radio 4 no whitenoise
-	fx_args{
-			.bit_depth = 16,
-			.sampling_rate = sampling_rate_e::_22,
-			.dist_drive = 0.9f,
-			.noise_vol = 0.f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 11 -> radio 5 no whitenoise
-	fx_args{
-			.bit_depth = 3,
-			.sampling_rate = sampling_rate_e::_8,
-			.dist_drive = 0.f,
-			.noise_vol = 0.f,
 			.noise_after_bitcrush = true,
 	},
 };
 
-template <effect_e EffectE>
+
+template <radio_effect_e EffectE, bool DisableWhitenoise>
+constexpr fx_args get_fx_args() {
+	if constexpr (DisableWhitenoise) {
+		constexpr fx_args ret = effect_args[EffectE];
+		return fx_args{
+			.bit_depth = ret.bit_depth,
+			.sampling_rate = ret.sampling_rate,
+			.dist_drive = ret.dist_drive,
+			.noise_vol = 0.f,
+			.noise_after_bitcrush = ret.noise_after_bitcrush,
+		};
+	} else {
+		return effect_args[EffectE];
+	}
+}
+
+template <radio_effect_e EffectE, bool DisableWhitenoise>
 void fx(const voice& vopts, std::span<float> samples) {
-	constexpr fx_args args = effect_args[EffectE];
+	// constexpr fx_args args = effect_args[EffectE];
+	constexpr fx_args args = get_fx_args<EffectE, DisableWhitenoise>();
 
 	// std::atan not constexpr.
 	const float dist_norm = distortion_norm<args.dist_drive>();
@@ -254,7 +236,7 @@ void fx(const voice& vopts, std::span<float> samples) {
 void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 		std::vector<std::byte>& byte_buffer,
 		std::vector<float>& sample_buffer) {
-	if (vopts.effect() == effect_e::count) {
+	if (vopts.effect() == radio_effect_e::count) {
 		return;
 	}
 
@@ -274,8 +256,11 @@ void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 		byte_buffer.resize(byte_size);
 
 		unsigned long bytes_read = 0;
-		stream->Read(
-				byte_buffer.data(), uint32_t(byte_buffer.size()), &bytes_read);
+		if (!SUCCEEDED(stream->Read(byte_buffer.data(),
+					uint32_t(byte_buffer.size()), &bytes_read))) {
+			fea::maybe_throw(__FUNCTION__, __LINE__,
+					"Couldn't read tts stream to process effects.");
+		}
 		assert(bytes_read == byte_buffer.size());
 	}
 
@@ -297,10 +282,14 @@ void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 			vopts.bit_depth());
 
 	// Process samples.
-	fea::static_for<size_t(effect_e::count)>([&](auto const_i) {
-		constexpr effect_e fx_e = effect_e(size_t(const_i));
+	fea::static_for<size_t(radio_effect_e::count)>([&](auto const_i) {
+		constexpr radio_effect_e fx_e = radio_effect_e(size_t(const_i));
 		if (fx_e == vopts.effect()) {
-			fx<fx_e>(vopts, { sample_buffer });
+			if (vopts.radio_effect_disable_whitenoise) {
+				fx<fx_e, true>(vopts, { sample_buffer });
+			} else {
+				fx<fx_e, false>(vopts, { sample_buffer });
+			}
 		}
 	});
 
@@ -328,8 +317,11 @@ void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 		}
 
 		unsigned long bytes_written = 0;
-		stream->Write(byte_buffer.data(), uint32_t(byte_buffer.size()),
-				&bytes_written);
+		if (!SUCCEEDED(stream->Write(byte_buffer.data(),
+					uint32_t(byte_buffer.size()), &bytes_written))) {
+			fea::maybe_throw(__FUNCTION__, __LINE__,
+					"Couldn't write effects to tts stream.");
+		}
 		assert(bytes_written == byte_buffer.size());
 
 		// Leave in playable state.
