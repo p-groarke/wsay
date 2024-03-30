@@ -204,6 +204,9 @@ std::vector<CComPtr<ISpObjectToken>> make_voice_tokens() {
 	constexpr std::wstring_view win10_regkey
 			= L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_"
 			  L"OneCore\\Voices";
+	constexpr std::wstring_view cortana_regkey
+			= L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_"
+			  L"OneCore\\CortanaVoices";
 
 	auto add_voices = [&](const wchar_t* regkey,
 							  std::vector<CComPtr<ISpObjectToken>>& ret) {
@@ -229,6 +232,7 @@ std::vector<CComPtr<ISpObjectToken>> make_voice_tokens() {
 	std::vector<CComPtr<ISpObjectToken>> ret;
 	add_voices(SPCAT_VOICES, ret);
 	add_voices(win10_regkey.data(), ret);
+	add_voices(cortana_regkey.data(), ret);
 	return ret;
 }
 
