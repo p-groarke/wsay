@@ -85,18 +85,8 @@ async_token engine::make_async_token(const voice& v) {
 void engine::speak_async(const std::wstring& in_sentence, async_token& t) {
 	async_token_imp& tok = *t._impl;
 
-	std::wstring sentence;
-
-	// Setup extra xml tags.
-	if (tok.vopts.pitch != 10_u8) {
-		int pitch = int(std::clamp(tok.vopts.pitch, 0_u8, 20_u8));
-		pitch -= 10;
-		assert(pitch >= -10 && pitch <= 10);
-		sentence = std::format(L"<pitch absmiddle=\"{}\">{}</pitch>",
-				std::to_wstring(pitch), in_sentence);
-	} else {
-		sentence = in_sentence;
-	}
+	// Adds SAPI xml options to the sentence, if required.
+	std::wstring sentence = tok.tts.format_sentence(in_sentence);
 
 	// Clear the currently playing stream.
 	{
@@ -134,7 +124,7 @@ void engine::speak_async(const std::wstring& in_sentence, async_token& t) {
 		if (outv.data_stream_clone == nullptr) {
 			clone_input_stream(tok.tts, tok.device_outputs);
 		} else {
-			// Reset output stream to beginning.
+			// Already cloned, reset output stream to beginning.
 			if (!SUCCEEDED(IStream_Reset(outv.data_stream_clone))) {
 				fea::maybe_throw(__FUNCTION__, __LINE__,
 						"Couldn't reset output stream playhead.");
@@ -162,7 +152,8 @@ void engine::stop(async_token& t) {
 				__FUNCTION__, __LINE__, "Input couldn't stop.");
 	}
 	if (!SUCCEEDED(tok.tts->WaitUntilDone(INFINITE))) {
-		fea::maybe_throw(__FUNCTION__, __LINE__, "Couldn't wait on input speak.");
+		fea::maybe_throw(
+				__FUNCTION__, __LINE__, "Couldn't wait on input speak.");
 	}
 
 	// Stop outputs.
@@ -178,7 +169,7 @@ void engine::stop(async_token& t) {
 	for (device_output& outv : tok.device_outputs) {
 		if (!SUCCEEDED(outv->WaitUntilDone(INFINITE))) {
 			fea::maybe_throw(
-				__FUNCTION__, __LINE__, "Couldn't wait on output speak.");
+					__FUNCTION__, __LINE__, "Couldn't wait on output speak.");
 		}
 	}
 }
