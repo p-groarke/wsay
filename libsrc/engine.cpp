@@ -4,10 +4,13 @@
 #include "wsay/voice.hpp"
 
 #include <cassert>
+#include <fea/numerics/literals.hpp>
 #include <fea/utils/throw.hpp>
+#include <format>
 #include <string_view>
 #include <thread>
 
+using namespace fea::literals;
 
 namespace wsy {
 struct async_token_imp {
@@ -76,8 +79,21 @@ async_token engine::make_async_token(const voice& v) {
 	return ret;
 }
 
-void engine::speak_async(const std::wstring& sentence, async_token& t) {
+void engine::speak_async(const std::wstring& in_sentence, async_token& t) {
 	async_token_imp& tok = *t._impl;
+
+	std::wstring sentence;
+
+	// Setup extra xml tags.
+	if (tok.vopts.pitch != 10_u8) {
+		int pitch = int(std::clamp(tok.vopts.pitch, 0_u8, 20_u8));
+		pitch -= 10;
+		assert(pitch >= -10 && pitch <= 10);
+		sentence = std::format(L"<pitch absmiddle=\"{}\">{}</pitch>",
+				std::to_wstring(pitch), in_sentence);
+	} else {
+		sentence = in_sentence;
+	}
 
 	// Clear the currently playing stream.
 	{

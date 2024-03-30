@@ -144,6 +144,11 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"volume",
 			[&](std::wstring&& f) {
 				voice.volume = uint8_t(std::stoul(f));
+				if (voice.volume > 100u) {
+					std::wcerr << "--volume only supports values from 0 to "
+								  "100\n\n";
+					return false;
+				}
 				return true;
 			},
 			L"Sets the voice volume, from 0 to 100.", L'V');
@@ -152,10 +157,30 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"speed",
 			[&](std::wstring&& f) {
 				voice.speed = uint8_t(std::stoul(f));
+				if (voice.speed > 100u) {
+					std::wcerr << "--speed only supports values from 0 to "
+								  "100\n\n";
+					return false;
+				}
 				return true;
 			},
 			L"Sets the voice speed, from 0 to 100. 50 is the default speed.",
 			L's');
+
+	opt.add_required_arg_option(
+			L"pitch",
+			[&](std::wstring&& f) {
+				voice.pitch = uint8_t(std::stoul(f));
+				if (voice.pitch > 20u) {
+					std::wcerr << "--pitch only supports values from 0 to "
+								  "20\n\n";
+					return false;
+				}
+				return true;
+			},
+			L"Sets the voice pitch, from 0 to 20. 10 is the default "
+			L"pitch.",
+			L'P');
 
 	opt.add_flag_option(
 			L"clipboard",
@@ -187,9 +212,8 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			[&](std::wstring&& f) {
 				size_t fx = std::stoul(f) - 1;
 				if (fx >= size_t(wsy::effect_e::count)) {
-					std::wcerr << std::format(
-							L"Selected radio effect out of range. Choose "
-							L"between '1' and '{}'.\n",
+					std::wcerr << std::format(L"--fxradio only supports values "
+											  L"between 1 and {}.\n",
 							wsy::num_radio_fx());
 					return false;
 				}

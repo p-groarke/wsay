@@ -1,6 +1,6 @@
 cmake_policy(SET CMP0091 NEW)
 cmake_minimum_required (VERSION 3.15)
-project(wsay VERSION 1.6.0 LANGUAGES CXX)
+project(wsay VERSION 1.6.1 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -65,8 +65,8 @@ fea_fetch_content(wil
 # Pull conan
 # fea_pull_conan_debug()
 # fea_pull_conan_release()
-fea_pull_conan_debug(CONAN_ARGS "-s compiler.runtime=MTd")
-fea_pull_conan_release(CONAN_ARGS "-s compiler.runtime=MT")
+fea_pull_conan_debug(CONAN_ARGS "-s compiler.runtime=MTd --build missing")
+fea_pull_conan_release(CONAN_ARGS "-s compiler.runtime=MT --build missing")
 
 # libwsay
 set(LIB_NAME lib${PROJECT_NAME})
