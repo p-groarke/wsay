@@ -37,9 +37,6 @@ wsay "Hello there."
 # Ouput to a wav file. If no filename is entered, outputs to 'out.wav'.
 wsay "I can output to a wav file." -o
 
-# When using speech xml on the command line, escape double quotes with backslashes.
-wsay "Lets take a little <silence msec=\"500\"/> pause."
-
 # List supported voices. Install new Windows voices for more choices.
 wsay --list_voices
 	1 : Microsoft David Desktop - English (United States)
@@ -67,6 +64,9 @@ echo Speaking from pipe. | wsay
 
 # Pipe in a file.
 wsay < "i_can_read_a_text_file.txt"
+
+# When using speech xml on the command line, escape double quotes with backslashes.
+wsay "Lets take a little <silence msec=\"500\"/> pause."
 
 # In interactive mode, type sentences and press enter for them to be read.
 # Use !exit to quit.
@@ -101,6 +101,11 @@ wsay "Softly speaking" --volume 25
 
 # You can set the voice speed, from 0 to 100. 50 is the default speed.
 wsay "Quickly speaking" --speed 75
+
+# You can set the voice pitch, from 0 to 20. 10 is the default pitch.
+wsay "Low voice." --pitch 0
+wsay "Normal voice." --pitch 10
+wsay "High voice." --pitch 20
 
 # Degrade the sound to give a CB / radio feel. Multiple effects are provided.
 wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio 1
@@ -139,6 +144,7 @@ Options:
  -X, --nospeechxml                 Disable speech xml detection. Use this if the text contains special characters that
                                    aren't speech xml.
  -o, --output_file <optional>      Outputs to wav file. Uses 'out.wav' if no filename is provided.
+ -P, --pitch <value>               Sets the voice pitch, from 0 to 20. 10 is the default pitch.
  -p, --playback_device <multiple>  Specify a playback device. Use the number provided by --list_devices.
                                    You can provide more than 1 playback device, seperate the numbers with spaces. You
                                    can also mix output to file + playback.
@@ -149,7 +155,7 @@ Options:
  -h, --help                        Print this help
 
 wsay
-version 1.6.0
+version 1.6.1
 https://github.com/p-groarke/wsay/releases
 Philippe Groarke <hello@philippegroarke.com>
 ```

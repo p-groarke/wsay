@@ -178,7 +178,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				}
 				return true;
 			},
-			L"Sets the voice pitch, from 0 to 20. 10 is the default (middle) "
+			L"Sets the voice pitch, from 0 to 20. 10 is the default "
 			L"pitch.",
 			L'P');
 
