@@ -262,6 +262,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 		std::wstring wsentence;
 		while (std::getline(std::wcin, wsentence)) {
 			if (wsentence == exit_cmd) {
+				engine.stop(tok);
 				break;
 			}
 
