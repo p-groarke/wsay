@@ -176,6 +176,11 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 								  "20\n\n";
 					return false;
 				}
+
+				if (!voice.xml_parse) {
+					std::wcerr << "--pitch option requires xml parsing.\n\n";
+					return false;
+				}
 				return true;
 			},
 			L"Sets the voice pitch, from 0 to 20. 10 is the default "
@@ -199,6 +204,10 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	opt.add_flag_option(
 			L"nospeechxml",
 			[&]() {
+				if (voice.pitch != 10u) {
+					std::wcerr << "--pitch option requires xml parsing.\n\n";
+					return false;
+				}
 				voice.xml_parse = false;
 				parsetext = false;
 				return true;
