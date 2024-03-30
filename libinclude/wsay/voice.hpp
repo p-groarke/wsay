@@ -43,6 +43,11 @@ enum class effect_e : uint8_t {
 	radio4,
 	radio5,
 	radio6,
+	radio7,
+	radio8,
+	radio9,
+	radio10,
+	radio11,
 	radiocount,
 	count = radiocount,
 };
