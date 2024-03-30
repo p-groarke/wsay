@@ -91,10 +91,15 @@ struct device_output {
 		return voice.operator->();
 	}
 
+	// Clone of tts_voice data_stream.
 	CComPtr<IStream> data_stream_clone{};
+	// Clone of tts_voice sp_stream.
 	CComPtr<ISpStream> sp_stream_clone{};
+	// The file output stream.
 	CComPtr<ISpStream> file_stream{};
+	// The audio output format.
 	CComPtr<ISpMMSysAudio> sys_audio;
+	// Our voice, instantiated with sys_audio format.
 	CComPtr<ISpVoice> voice{};
 };
 
