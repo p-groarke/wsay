@@ -18,7 +18,7 @@ Simple command line text-to-speech with easy file output, voice selection and mo
   - If you need full unicode support, best to use the new [Windows Terminal](https://aka.ms/terminal).
 - Supports utf8, utf16le and utf16be text files.
 - Interactive mode.
-- Volume and speed options.
+- Volume, speed and pitch options.
 - Radio effects for flight sims and such.
 
 
