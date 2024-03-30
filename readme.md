@@ -51,7 +51,7 @@ wsay --list_voices
 wsay "I can use different voices." --voice 6
 
 # Provide an output filename.
-wsay "You can name the ouput file." -o my_output_file.wav
+wsay "You can name the output file." -o my_output_file.wav
 
 # Read text from a text file instead.
 wsay -i i_can_read_a_text_file.txt
@@ -60,7 +60,7 @@ wsay -i i_can_read_a_text_file.txt
 wsay -c
 
 # Pipe text.
-echo Speaking from pipe. | wsay
+echo "Speaking from pipe." | wsay
 
 # Pipe in a file.
 wsay < "i_can_read_a_text_file.txt"
