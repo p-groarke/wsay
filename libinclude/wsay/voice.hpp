@@ -85,6 +85,7 @@ struct voice_output {
 struct voice {
 	uint8_t volume = 100; // 0-100
 	uint8_t speed = 50; // 0-100
+	uint8_t pitch = 10; // 0-20
 	bool xml_parse = true;
 	size_t voice_idx = 0;
 

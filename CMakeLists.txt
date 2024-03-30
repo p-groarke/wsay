@@ -65,8 +65,8 @@ fea_fetch_content(wil
 # Pull conan
 # fea_pull_conan_debug()
 # fea_pull_conan_release()
-fea_pull_conan_debug(CONAN_ARGS "-s compiler.runtime=MTd")
-fea_pull_conan_release(CONAN_ARGS "-s compiler.runtime=MT")
+fea_pull_conan_debug(CONAN_ARGS "-s compiler.runtime=MTd --build missing")
+fea_pull_conan_release(CONAN_ARGS "-s compiler.runtime=MT --build missing")
 
 # libwsay
 set(LIB_NAME lib${PROJECT_NAME})
