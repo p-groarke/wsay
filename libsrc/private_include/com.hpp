@@ -29,7 +29,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #pragma once
-#include "private_include/com_mmdevice.hpp"
 #include "wsay/voice.hpp"
 
 #define _ATL_APARTMENT_THREADED
@@ -43,36 +42,14 @@ extern CComModule _Module;
 #include <sphelper.h>
 #pragma warning(pop)
 
-#include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <fea/enum/enum_array.hpp>
-#include <fea/numerics/literals.hpp>
-#include <fea/utils/error.hpp>
-#include <fea/utils/throw.hpp>
-#include <iostream>
+#include <functional>
+#include <string>
 #include <string_view>
-#include <thread>
 #include <vector>
 #include <wil/resource.h>
 #include <wil/result.h>
 
-namespace wsy {
-constexpr inline compression_e output_compression = compression_e::none;
-constexpr inline bit_depth_e output_bit_depth = bit_depth_e::_16;
-constexpr inline sampling_rate_e output_sample_rate = sampling_rate_e::_44;
-
-struct coinit {
-	coinit() {
-		THROW_IF_FAILED_MSG(::CoInitializeEx(nullptr, COINIT_MULTITHREADED),
-				"Couldn't initialize COM.\n");
-	}
-	~coinit() {
-		::CoUninitialize();
-	}
-};
-inline coinit _coinit;
-
+namespace wsay {
 struct tts_voice {
 	auto* operator->() {
 		return voice.operator->();
@@ -83,8 +60,8 @@ struct tts_voice {
 
 	// Option flags.
 	unsigned long flags = 0;
-	// Option format string, if applicable.
-	std::wstring fmt{};
+	// String processing, if applicable.
+	std::vector<std::function<void(std::wstring&)>> text_modifiers{};
 	// Our backing data stream (bytes).
 	CComPtr<IStream> data_stream{};
 	// Points to data stream.
@@ -144,4 +121,4 @@ extern void make_everything(
 // Clones have same bytes but independent playhead.
 extern void clone_input_stream(
 		const tts_voice& tts, std::vector<device_output>& device_outputs);
-} // namespace wsy
+} // namespace wsay

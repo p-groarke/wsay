@@ -29,12 +29,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #pragma once
-#include <cstdint>
 #include <string>
 #include <vector>
 
-namespace wsy {
+namespace wsay {
 extern size_t default_output_device_idx(
 		const std::vector<std::wstring>& device_names);
 
-} // namespace wsy
+} // namespace wsay

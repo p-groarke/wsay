@@ -14,13 +14,14 @@ extern CComModule _Module;
 #pragma warning(pop)
 
 #include <cassert>
+#include <cstdint>
 #include <fea/string/string.hpp>
 #include <iostream>
 #include <memory>
 #include <wil/resource.h>
 #include <wil/result.h>
 
-namespace wsy {
+namespace wsay {
 
 size_t default_output_device_idx(
 		const std::vector<std::wstring>& device_names) {
@@ -87,4 +88,4 @@ size_t default_output_device_idx(
 	return 0;
 }
 
-} // namespace wsy
+} // namespace wsay

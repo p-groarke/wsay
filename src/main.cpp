@@ -10,14 +10,6 @@
 #include <wsay/engine.hpp>
 #include <wsay/voice.hpp>
 
-/*
-TODO :
---language (where are LANGIDs defined?)
-https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ms717077(v=vs.85)
-https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ee125675(v=vs.85)
-
-*/
-
 const std::wstring exit_cmd = L"!exit";
 const std::wstring shutup_cmd = L"!stop";
 
@@ -25,10 +17,9 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	fea::fast_iostreams();
 	auto on_exit_reset_term = fea::utf8_terminal(true);
 
-	wsy::engine engine;
-	wsy::voice voice;
+	wsay::engine engine;
+	wsay::voice voice;
 
-	bool parsetext = true;
 	bool interactive_mode = false;
 	std::wstring speech_text = fea::wread_pipe_text();
 
@@ -175,6 +166,20 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"Sets the voice speed, from 0 to 100. 50 is the default speed.",
 			L's');
 
+	opt.add_flag_option(
+			L"clipboard",
+			[&]() {
+				speech_text = get_clipboard_text();
+				if (speech_text.empty()) {
+					return false;
+				}
+
+				std::wcout << std::format(
+						L"Playing clipboard text : '{}'\n", speech_text);
+				return true;
+			},
+			L"Speak currently copied text (the text in your clipboard).", L'c');
+
 	opt.add_required_arg_option(
 			L"pitch",
 			[&](std::wstring&& f) {
@@ -195,19 +200,6 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"pitch.",
 			L'P');
 
-	opt.add_flag_option(
-			L"clipboard",
-			[&]() {
-				speech_text = get_clipboard_text();
-				if (speech_text.empty()) {
-					return false;
-				}
-
-				std::wcout << std::format(
-						L"Playing clipboard text : '{}'\n", speech_text);
-				return true;
-			},
-			L"Speak currently copied text (the text in your clipboard).", L'c');
 
 	opt.add_flag_option(
 			L"nospeechxml",
@@ -216,44 +208,69 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 					std::wcerr << "--pitch option requires xml parsing.\n\n";
 					return false;
 				}
+
+				if (voice.paragraph_pause_ms
+						!= (std::numeric_limits<uint16_t>::max)()) {
+					std::wcerr << "--paragraph_pause option requires xml "
+								  "parsing.\n\n";
+					return false;
+				}
+
 				voice.xml_parse = false;
-				parsetext = false;
 				return true;
 			},
 			L"Disable speech xml detection. Use this if the text contains "
-			L"special characters that aren't speech xml.\n",
-			L'X');
+			L"special characters that aren't speech xml.\n");
+
+	opt.add_required_arg_option(
+			L"paragraph_pause",
+			[&](std::wstring&& str) {
+				if (!voice.xml_parse) {
+					std::wcerr << "--paragraph_pause option requires xml "
+								  "parsing.\n\n";
+					return false;
+				}
+
+				voice.paragraph_pause_ms = uint16_t(std::stoul(str));
+				return true;
+			},
+			L"Allows you to set the amount of milliseconds to pause between "
+			L"paragraphs.\nSupported values : 0 to a very big number.");
+
 
 	opt.add_required_arg_option(
 			L"fxradio",
 			[&](std::wstring&& f) {
 				size_t fx = std::stoul(f) - 1;
-				if (fx >= size_t(wsy::radio_effect_e::count)) {
+				if (fx >= size_t(wsay::radio_effect_e::count)) {
 					std::wcerr << std::format(L"--fxradio only supports values "
 											  L"between 1 and {}.\n",
-							wsy::num_radio_fx());
+							wsay::num_radio_fx());
 					return false;
 				}
 
-				voice.radio_effect(wsy::radio_effect_e(fx));
+				voice.radio_effect(wsay::radio_effect_e(fx));
 				return true;
 			},
 			std::format(L"Degrades audio to make it sound like a "
 						L"radio.\nSupported values : 1 to {}.\n",
-					wsy::num_radio_fx()));
+					wsay::num_radio_fx()));
+
 	opt.add_flag_option(
-			L"fxradiononoise",
+			L"fxradio_nonoise",
 			[&]() {
 				voice.radio_effect_disable_whitenoise = true;
 				return true;
 			},
 			L"Disables background noise when using --fxradio.\n");
 
+
 	std::wstring help_outro = L"wsay\nversion ";
 	help_outro += WSAY_VERSION;
 	help_outro += L"\nhttps://github.com/p-groarke/wsay/releases\n";
 	help_outro += L"Philippe Groarke <hello@philippegroarke.com>";
 	opt.add_help_outro(help_outro);
+	opt.print_full_help_on_error(false);
 
 	if (!speech_text.empty()) {
 		// We have some text coming from pipe, or elsewhere.
@@ -265,7 +282,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	}
 
 	if (interactive_mode) {
-		wsy::async_token tok = engine.make_async_token(voice);
+		wsay::async_token tok = engine.make_async_token(voice);
 
 		std::wcout << L"[Info] Type sentences, press enter to speak them.\n";
 		std::wcout << std::format(
@@ -289,9 +306,8 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			engine.speak_async(wsentence, tok);
 		}
 		return 0;
-	} else {
-		engine.speak(voice, speech_text);
 	}
 
+	engine.speak(voice, speech_text);
 	return 0;
 }

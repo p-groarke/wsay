@@ -1,18 +1,48 @@
 ﻿#include "private_include/com.hpp"
+#include "private_include/com_mmdevice.hpp"
 
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <fea/enum/enum_array.hpp>
+#include <fea/numerics/literals.hpp>
+#include <fea/string/string.hpp>
+#include <fea/utils/error.hpp>
+#include <fea/utils/regex.hpp>
+#include <fea/utils/throw.hpp>
 #include <format>
-#include <string>
-#include <string_view>
+#include <iostream>
+#include <regex>
+#include <thread>
 
-namespace wsy {
+namespace wsay {
 using namespace fea::literals;
 
+constexpr inline compression_e output_compression = compression_e::none;
+constexpr inline bit_depth_e output_bit_depth = bit_depth_e::_16;
+constexpr inline sampling_rate_e output_sample_rate = sampling_rate_e::_44;
+
+struct coinit {
+	coinit() {
+		THROW_IF_FAILED_MSG(::CoInitializeEx(nullptr, COINIT_MULTITHREADED),
+				"Couldn't initialize COM.\n");
+	}
+	~coinit() {
+		::CoUninitialize();
+	}
+};
+inline const coinit _coinit;
+
 std::wstring tts_voice::format_sentence(const std::wstring& in) const {
-	if (fmt.empty()) {
+	if (text_modifiers.empty()) {
 		return in;
 	}
 
-	return std::vformat(std::wstring_view{ fmt }, std::make_wformat_args(in));
+	std::wstring ret = in;
+	for (const std::function<void(std::wstring&)>& func : text_modifiers) {
+		func(ret);
+	}
+	return ret;
 }
 
 SPSTREAMFORMAT to_spstreamformat(compression_e compression,
@@ -188,7 +218,7 @@ std::vector<std::wstring> make_names(
 	return ret;
 }
 
-wsy::tts_voice make_tts_voice(const voice& vopts,
+wsay::tts_voice make_tts_voice(const voice& vopts,
 		const std::vector<CComPtr<ISpObjectToken>>& voice_tokens) {
 	tts_voice ret{};
 
@@ -262,21 +292,54 @@ wsy::tts_voice make_tts_voice(const voice& vopts,
 	}
 
 	// Add xml tags that are driven by voice options.
-	ret.fmt.clear(); // just in case
 	if (vopts.pitch != 10_u8) {
 		int pitch = int(std::clamp(vopts.pitch, 0_u8, 20_u8));
 		pitch -= 10;
 		assert(pitch >= -10 && pitch <= 10);
 
-		// Result fmt should only contain a single '{}' for formatting.
-		ret.fmt = std::format(L"<pitch absmiddle=\"{}\">{{}}</pitch>",
-				std::to_wstring(pitch));
+		ret.text_modifiers.push_back([p = pitch](std::wstring& text) {
+			assert(p >= -10 && p <= 10);
+			text = std::format(L"<pitch absmiddle=\"{}\">{}</pitch>",
+					std::to_wstring(p), text);
+		});
+	}
+
+	// Add more involved text parsing processes.
+	if (vopts.paragraph_pause_ms != (std::numeric_limits<uint16_t>::max)()) {
+		// Text cleanup.
+		// Might be needed for other parsing.
+		ret.text_modifiers.push_back([](std::wstring& text) {
+			static const std::wregex spaces_re{
+				L"[ \\t\\v]+",
+				std::regex_constants::optimize | std::regex_constants::icase,
+			};
+			static const std::wregex line_endings_re{
+				L"\\s*\\n+\\s*",
+				std::regex_constants::optimize | std::regex_constants::icase,
+			};
+
+			// Cleanup \r\n, multiple consecutive tabs + spaces, etc.
+			fea::replace_all_inplace(text, L'\r', L' ');
+			fea::replace_all_inplace(text, L'\f', L' ');
+			text = std::regex_replace(text, spaces_re, L" ");
+			text = std::regex_replace(text, line_endings_re, L"\n");
+		});
+
+		// Pragraph pause insertion.
+		ret.text_modifiers.push_back(
+				[ms = vopts.paragraph_pause_ms](std::wstring& text) {
+					const std::wstring paragraph_xml
+							= std::format(L"<silence msec=\"{}\"/>", ms);
+
+					// Add silence speech xml.
+					fea::replace_all_inplace(text, L"\n", paragraph_xml);
+				});
 	}
 
 	return ret;
 }
 
-wsy::device_output make_device_output(const voice_output& vout,
+wsay::device_output make_device_output(const voice_output& vout,
 		const std::vector<CComPtr<ISpObjectToken>>& device_tokens) {
 	device_output ret{};
 
@@ -415,4 +478,4 @@ void clone_input_stream(
 	}
 }
 
-} // namespace wsy
+} // namespace wsay

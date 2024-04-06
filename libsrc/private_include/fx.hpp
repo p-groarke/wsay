@@ -36,9 +36,9 @@
 #include <wil/resource.h>
 #include <wil/result.h>
 
-namespace wsy {
+namespace wsay {
 // Processes audio according to the vopts options.
 // Provide byte and sample buffers, they will be reused to minimize allocations.
 extern void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 		std::vector<std::byte>& byte_buffer, std::vector<float>& sample_buffer);
-} // namespace wsy
+} // namespace wsay

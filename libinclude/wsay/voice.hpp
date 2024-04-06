@@ -35,7 +35,7 @@
 #include <limits>
 #include <vector>
 
-namespace wsy {
+namespace wsay {
 enum class radio_effect_e : uint8_t {
 	radio1,
 	radio2,
@@ -87,6 +87,7 @@ struct voice {
 	uint8_t pitch = 10; // 0-20
 	bool xml_parse = true;
 	bool radio_effect_disable_whitenoise = false;
+	uint16_t paragraph_pause_ms = (std::numeric_limits<uint16_t>::max)();
 	size_t voice_idx = 0;
 
 	void radio_effect(radio_effect_e fx) {
@@ -162,4 +163,4 @@ inline constexpr size_t num_radio_fx() {
 	return size_t(radio_effect_e::count) - size_t(radio_effect_e::radio1);
 }
 
-} // namespace wsy
+} // namespace wsay

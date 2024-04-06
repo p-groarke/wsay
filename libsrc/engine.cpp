@@ -12,7 +12,7 @@
 
 using namespace fea::literals;
 
-namespace wsy {
+namespace wsay {
 struct async_token_imp {
 	voice vopts;
 	tts_voice tts;
@@ -181,4 +181,4 @@ engine_imp& engine::imp() {
 	return *_impl;
 }
 
-} // namespace wsy
+} // namespace wsay

@@ -4,12 +4,13 @@
 #include <cstdint>
 #include <fea/enum/enum_array.hpp>
 #include <fea/meta/static_for.hpp>
+#include <fea/utils/error.hpp>
 #include <fea/utils/intrinsics.hpp>
 #include <random>
 #include <span>
 #include <type_traits>
 
-namespace wsy {
+namespace wsay {
 namespace {
 template <bit_depth_e>
 struct bit_depth_type;
@@ -332,4 +333,4 @@ void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 	}
 }
 
-} // namespace wsy
+} // namespace wsay
