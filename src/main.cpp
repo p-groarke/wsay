@@ -133,10 +133,9 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				return true;
 			},
 			L"Specify a playback device. Use the number "
-			"provided by --list_devices.\nYou can provide more than 1 "
-			"playback device, seperate the numbers with spaces. You "
-			"can also mix output to file + playback.\nUse 'all' to select all "
-			"devices.",
+			"provided by --list_devices.\nYou can provide more than one "
+			"playback device, seperate the numbers with spaces.\n"
+			"Use 'all' to select all devices.",
 			L'p');
 
 	opt.add_required_arg_option(
@@ -234,8 +233,8 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				voice.paragraph_pause_ms = uint16_t(std::stoul(str));
 				return true;
 			},
-			L"Allows you to set the amount of milliseconds to pause between "
-			L"paragraphs.\nSupported values : 0 to a very big number.");
+			L"Sets the amount of pause time between "
+			L"paragraphs (in milliseconds), from 0 to *a big number*.");
 
 
 	opt.add_required_arg_option(
@@ -253,7 +252,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 				return true;
 			},
 			std::format(L"Degrades audio to make it sound like a "
-						L"radio.\nSupported values : 1 to {}.\n",
+						L"radio, from 1 to {}.\n",
 					wsay::num_radio_fx()));
 
 	opt.add_flag_option(
@@ -271,6 +270,7 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 	help_outro += L"Philippe Groarke <hello@philippegroarke.com>";
 	opt.add_help_outro(help_outro);
 	opt.print_full_help_on_error(false);
+	opt.longoptions_are_extra_options(true);
 
 	if (!speech_text.empty()) {
 		// We have some text coming from pipe, or elsewhere.
