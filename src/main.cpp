@@ -241,19 +241,19 @@ int wmain(int argc, wchar_t** argv, wchar_t**) {
 			L"fxradio",
 			[&](std::wstring&& f) {
 				size_t fx = std::stoul(f) - 1;
-				if (fx >= size_t(wsay::radio_effect_e::count)) {
+				if (fx >= size_t(wsay::radio_preset_e::count)) {
 					std::wcerr << std::format(L"--fxradio only supports values "
 											  L"between 1 and {}.\n",
-							wsay::num_radio_fx());
+							wsay::radio_preset_count());
 					return false;
 				}
 
-				voice.radio_effect(wsay::radio_effect_e(fx));
+				voice.radio_effect(wsay::radio_preset_e(fx));
 				return true;
 			},
 			std::format(L"Degrades audio to make it sound like a "
 						L"radio, from 1 to {}.\n",
-					wsay::num_radio_fx()));
+					wsay::radio_preset_count()));
 
 	opt.add_flag_option(
 			L"fxradio_nonoise",

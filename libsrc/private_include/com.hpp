@@ -35,6 +35,8 @@
 #include <atlbase.h>
 extern CComModule _Module;
 #include <atlcom.h>
+#include <functiondiscoverykeys.h>
+#include <mmdeviceapi.h>
 #include <sapi.h>
 
 #pragma warning(push)
@@ -121,4 +123,9 @@ extern void make_everything(
 // Clones have same bytes but independent playhead.
 extern void clone_input_stream(
 		const tts_voice& tts, std::vector<device_output>& device_outputs);
+
+// Given a list of devices, returns the user selected output device if possible.
+// Returns 0 if it can't figure it out.
+extern size_t default_output_device_idx(
+		const std::vector<std::wstring>& device_names);
 } // namespace wsay

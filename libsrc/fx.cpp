@@ -2,45 +2,16 @@
 
 #include <cmath>
 #include <cstdint>
-#include <fea/enum/enum_array.hpp>
 #include <fea/meta/static_for.hpp>
 #include <fea/utils/error.hpp>
 #include <fea/utils/intrinsics.hpp>
+#include <numbers>
 #include <random>
 #include <span>
 #include <type_traits>
 
 namespace wsay {
 namespace {
-template <bit_depth_e>
-struct bit_depth_type;
-template <>
-struct bit_depth_type<bit_depth_e::_8> {
-	using type = int8_t;
-};
-template <>
-struct bit_depth_type<bit_depth_e::_16> {
-	using type = int16_t;
-};
-template <bit_depth_e BD>
-using bit_depth_t = typename bit_depth_type<BD>::type;
-
-
-constexpr size_t to_value(bit_depth_e bd) {
-	switch (bd) {
-	case bit_depth_e::_8: {
-		return 8;
-	} break;
-	case bit_depth_e::_16: {
-		return 16;
-	} break;
-	default: {
-		assert(false);
-	} break;
-	}
-	return (std::numeric_limits<size_t>::max)();
-}
-
 constexpr size_t to_value(sampling_rate_e sr) {
 	switch (sr) {
 	case sampling_rate_e::_8: {
@@ -119,83 +90,84 @@ template <float Vol>
 	}
 }
 
-struct fx_args {
-	size_t bit_depth;
-	sampling_rate_e sampling_rate;
-	float dist_drive;
-	float noise_vol;
-	bool noise_after_bitcrush;
+struct biquad_state {
+	float z1 = 0.f;
+	float z2 = 0.f;
 };
 
-inline constexpr fea::enum_array<fx_args, radio_effect_e> effect_args{
-	// radio 1
-	fx_args{
-			.bit_depth = 5,
-			.sampling_rate = sampling_rate_e::_8,
-			.dist_drive = 0.2f,
-			.noise_vol = 0.00001f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 2
-	fx_args{
-			.bit_depth = 6,
-			.sampling_rate = sampling_rate_e::_8,
-			.dist_drive = 0.f,
-			.noise_vol = 0.01f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 3
-	fx_args{
-			.bit_depth = 16,
-			.sampling_rate = sampling_rate_e::_44,
-			.dist_drive = 1.f,
-			.noise_vol = 0.01f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 4
-	fx_args{
-			.bit_depth = 16,
-			.sampling_rate = sampling_rate_e::_22,
-			.dist_drive = 0.9f,
-			.noise_vol = 0.001f,
-			.noise_after_bitcrush = false,
-	},
-	// radio 5
-	fx_args{
-			.bit_depth = 3,
-			.sampling_rate = sampling_rate_e::_8,
-			.dist_drive = 0.f,
-			.noise_vol = 0.1f,
-			.noise_after_bitcrush = true,
-	},
-	// radio 6
-	fx_args{
-			.bit_depth = 4,
-			.sampling_rate = sampling_rate_e::_44,
-			.dist_drive = 0.f,
-			.noise_vol = 0.f,
-			.noise_after_bitcrush = true,
-	},
-};
+template <biquad_args Args>
+	requires(Args.type == biquad_type_e::count)
+[[nodiscard]] float biquad(float sample, biquad_state&) {
+	return sample;
+}
+template <biquad_args Args>
+	requires(Args.type != biquad_type_e::count)
+[[nodiscard]] float biquad(float sample, biquad_state& state) {
+	static_assert(
+			Args.type != biquad_type_e::count, "Should never end up here.");
+
+	// static const float v = std::pow(10.f, std::abs(Args.gain) / 20.f);
+	static const float k = std::tan(std::numbers::pi_v<float> * Args.freq);
+	static const float norm = 1.f / (1.f + k / Args.q + k * k);
+
+	struct vals {
+		constexpr vals() {
+			// https://www.earlevel.com/main/2012/11/26/biquad-c-source-code/
+			if constexpr (Args.type == biquad_type_e::lowpass) {
+				a0 = k * k * norm;
+				a1 = 2.f * a0;
+				a2 = a0;
+				b1 = 2.f * (k * k - 1.f) * norm;
+				b2 = (1.f - k / Args.q + k * k) * norm;
+			} else if constexpr (Args.type == biquad_type_e::highpass) {
+				a0 = 1.f * norm;
+				a1 = -2.f * a0;
+				a2 = a0;
+				b1 = 2.f * (k * k - 1.f) * norm;
+				b2 = (1.f - k / Args.q + k * k) * norm;
+			} else if constexpr (Args.type == biquad_type_e::bandbass) {
+				a0 = k / Args.q * norm;
+				a1 = 0.f;
+				a2 = -a0;
+				b1 = 2.f * (k * k - 1.f) * norm;
+				b2 = (1.f - k / Args.q + k * k) * norm;
+			} else if constexpr (Args.type == biquad_type_e::notch) {
+				a0 = (1.f + k * k) * norm;
+				a1 = 2.f * (k * k - 1.f) * norm;
+				a2 = a0;
+				b1 = a1;
+				b2 = (1.f - k / Args.q + k * k) * norm;
+			}
+		}
+
+		float a0 = 1.f;
+		float a1 = 0.f;
+		float a2 = 0.f;
+		float b1 = 0.f;
+		float b2 = 0.f;
+	};
+	static const vals v{};
+
+	// Do that actual processing.
+	float ret = sample * v.a0 + state.z1;
+	state.z1 = sample * v.a1 + state.z2 - v.b1 * ret;
+	state.z2 = sample * v.a2 - v.b2 * ret;
+	return ret;
+}
 
 
-template <radio_effect_e EffectE, bool DisableWhitenoise>
+template <radio_preset_e EffectE, bool DisableWhitenoise>
 constexpr fx_args get_fx_args() {
 	if constexpr (DisableWhitenoise) {
-		constexpr fx_args ret = effect_args[EffectE];
-		return fx_args{
-			.bit_depth = ret.bit_depth,
-			.sampling_rate = ret.sampling_rate,
-			.dist_drive = ret.dist_drive,
-			.noise_vol = 0.f,
-			.noise_after_bitcrush = ret.noise_after_bitcrush,
-		};
+		fx_args ret = radio_presets[EffectE];
+		ret.noise_vol = 0.f;
+		return ret;
 	} else {
-		return effect_args[EffectE];
+		return radio_presets[EffectE];
 	}
 }
 
-template <radio_effect_e EffectE, bool DisableWhitenoise>
+template <radio_preset_e EffectE, bool DisableWhitenoise>
 void fx(const voice& vopts, std::span<float> samples) {
 	// constexpr fx_args args = effect_args[EffectE];
 	constexpr fx_args args = get_fx_args<EffectE, DisableWhitenoise>();
@@ -204,13 +176,15 @@ void fx(const voice& vopts, std::span<float> samples) {
 	const float dist_norm = distortion_norm<args.dist_drive>();
 	const float global_vol = float(vopts.volume) * 0.01f;
 
+	biquad_state bi_state = {};
+
 	// We only process samples that will be kept by resampling.
 	const size_t idx_range
 			= to_value(vopts.sampling_rate()) / to_value(args.sampling_rate);
 	const size_t loop_remainder = samples.size() % idx_range;
 
-	for (size_t i = 0; i < samples.size() - loop_remainder; i += idx_range) {
-		float& s = samples[i];
+	auto process = [&](float* begin, size_t size) {
+		float& s = *begin;
 		if constexpr (!args.noise_after_bitcrush) {
 			s = white_noise<args.noise_vol>(global_vol, s);
 		}
@@ -219,17 +193,20 @@ void fx(const voice& vopts, std::span<float> samples) {
 			s = white_noise<args.noise_vol>(global_vol, s);
 		}
 		s = distort<args.dist_drive>(dist_norm, s);
+		s = biquad<args.biquad>(s, bi_state);
+		s *= args.gain;
 
-		std::fill(samples.begin() + i + 1, samples.begin() + i + idx_range, s);
+		std::fill(begin + 1, begin + size, s);
+	};
+
+	for (size_t i = 0; i < samples.size() - loop_remainder; i += idx_range) {
+		process(&samples[i], idx_range);
 	}
 
 	// Process remainder.
 	size_t last_idx = samples.size() - loop_remainder;
 	if (last_idx < samples.size()) {
-		float last_s = samples[last_idx];
-		last_s = bit_crush<args.bit_depth>(last_s);
-		last_s = distort<args.dist_drive>(dist_norm, last_s);
-		std::fill(samples.begin() + last_idx + 1, samples.end(), last_s);
+		process(&samples[last_idx], samples.size() - last_idx);
 	}
 }
 } // namespace
@@ -237,7 +214,7 @@ void fx(const voice& vopts, std::span<float> samples) {
 void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 		std::vector<std::byte>& byte_buffer,
 		std::vector<float>& sample_buffer) {
-	if (vopts.radio_effect() == radio_effect_e::count) {
+	if (vopts.radio_effect() == radio_preset_e::count) {
 		return;
 	}
 
@@ -283,8 +260,8 @@ void process_fx(const voice& vopts, CComPtr<IStream>& stream,
 			vopts.bit_depth());
 
 	// Process samples.
-	fea::static_for<size_t(radio_effect_e::count)>([&](auto const_i) {
-		constexpr radio_effect_e fx_e = radio_effect_e(size_t(const_i));
+	fea::static_for<size_t(radio_preset_e::count)>([&](auto const_i) {
+		constexpr radio_preset_e fx_e = radio_preset_e(size_t(const_i));
 		if (fx_e == vopts.radio_effect()) {
 			if (vopts.radio_effect_disable_whitenoise) {
 				fx<fx_e, true>(vopts, { sample_buffer });

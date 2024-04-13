@@ -36,7 +36,7 @@
 #include <vector>
 
 namespace wsay {
-enum class radio_effect_e : uint8_t {
+enum class radio_preset_e : uint8_t {
 	radio1,
 	radio2,
 	radio3,
@@ -90,19 +90,19 @@ struct voice {
 	uint16_t paragraph_pause_ms = (std::numeric_limits<uint16_t>::max)();
 	size_t voice_idx = 0;
 
-	void radio_effect(radio_effect_e fx) {
+	void radio_effect(radio_preset_e fx) {
 		_radio_effect = fx;
 		_compression = compression_e::none;
 		_bit_depth = bit_depth_e::_16;
 		_sampling_rate = sampling_rate_e::_44;
 	}
-	radio_effect_e radio_effect() const {
+	radio_preset_e radio_effect() const {
 		return _radio_effect;
 	}
 
 	void compression(compression_e comp) {
 		assert(comp != compression_e::count);
-		_radio_effect = radio_effect_e::count;
+		_radio_effect = radio_preset_e::count;
 		_compression = comp;
 	}
 	compression_e compression() const {
@@ -111,7 +111,7 @@ struct voice {
 
 	void bit_depth(bit_depth_e bd) {
 		assert(bd != bit_depth_e::count);
-		_radio_effect = radio_effect_e::count;
+		_radio_effect = radio_preset_e::count;
 		_bit_depth = bd;
 	}
 	bit_depth_e bit_depth() const {
@@ -120,7 +120,7 @@ struct voice {
 
 	void sampling_rate(sampling_rate_e sr) {
 		assert(sr != sampling_rate_e::count);
-		_radio_effect = radio_effect_e::count;
+		_radio_effect = radio_preset_e::count;
 		_sampling_rate = sr;
 	}
 	sampling_rate_e sampling_rate() const {
@@ -148,7 +148,7 @@ struct voice {
 
 private:
 	// If set, supersedes audio settings.
-	radio_effect_e _radio_effect = radio_effect_e::count;
+	radio_preset_e _radio_effect = radio_preset_e::count;
 
 	// Audio settings.
 	compression_e _compression = compression_e::none;
@@ -159,8 +159,8 @@ private:
 	std::vector<voice_output> _outputs;
 };
 
-inline constexpr size_t num_radio_fx() {
-	return size_t(radio_effect_e::count) - size_t(radio_effect_e::radio1);
+inline constexpr size_t radio_preset_count() {
+	return size_t(radio_preset_e::count);
 }
 
 } // namespace wsay
