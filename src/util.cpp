@@ -7,7 +7,6 @@
 #include <fea/utils/scope.hpp>
 #include <fstream>
 #include <iostream>
-#include <regex>
 #include <windows.h>
 
 bool parse_text_file(
@@ -77,31 +76,3 @@ std::wstring get_clipboard_text() {
 
 	return std::wstring{ clip_text };
 }
-
-namespace {
-const std::wregex spaces_re{
-	L"[ \\t\\v]+",
-	std::regex_constants::optimize | std::regex_constants::icase,
-};
-const std::wregex line_endings_re{
-	L"\\n+",
-	std::regex_constants::optimize | std::regex_constants::icase,
-};
-
-constexpr size_t paragraph_silence_msec = 100;
-const std::wstring paragraph_xml
-		= std::format(L"\n<silence msec=\"{}\"/>", paragraph_silence_msec);
-} // namespace
-
-// void add_speech_xml(std::wstring& text) {
-//	// First, cleanup.
-//	{
-//		fea::replace_all_inplace(text, L'\r', L'\n');
-//		fea::replace_all_inplace(text, L'\f', L'\n');
-//		text = std::regex_replace(text, spaces_re, L" ");
-//		text = std::regex_replace(text, line_endings_re, L"\n");
-//	}
-//
-//	// Now, add speech xml.
-//	fea::replace_all_inplace(text, L"\n", paragraph_xml);
-// }

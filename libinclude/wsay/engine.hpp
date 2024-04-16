@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-namespace wsy {
+namespace wsay {
 struct async_token_imp;
 struct async_token : fea::pimpl_ptr<async_token_imp> {
 	async_token();
@@ -88,4 +88,4 @@ private:
 	engine_imp& imp();
 };
 
-} // namespace wsy
+} // namespace wsay

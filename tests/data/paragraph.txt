@@ -1,0 +1,23 @@
+History
+   		Stephen     			  	 Cole Kleene, who introduced the concept   
+
+
+
+Regular expressions originated in 1951,
+
+
+when
+
+  		 mathematician Stephen Cole Kleene described 
+
+  		regular   		 	 languages using 
+
+
+
+
+
+
+  		his mathematical notation called regular events.
+
+
+  		  

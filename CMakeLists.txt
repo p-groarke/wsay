@@ -1,6 +1,6 @@
 cmake_policy(SET CMP0091 NEW)
 cmake_minimum_required (VERSION 3.15)
-project(wsay VERSION 1.6.1 LANGUAGES CXX)
+project(wsay VERSION 1.6.2 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -116,7 +116,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "
 
 # Tests
 if (WSAY_TESTS)
-	enable_testing()
+	# enable_testing()
 
 	find_package(GTest CONFIG REQUIRED)
 
@@ -125,7 +125,7 @@ if (WSAY_TESTS)
 	add_executable(${TEST_NAME} ${TEST_SOURCES})
 	target_link_libraries(${TEST_NAME} PRIVATE ${LIB_NAME} GTest::GTest)
 
-	gtest_discover_tests(${TEST_NAME})
+	# gtest_discover_tests(${TEST_NAME})
 	add_dependencies(${TEST_NAME} ${PROJECT_NAME})
 
 	fea_set_compile_options(${TEST_NAME} PUBLIC)

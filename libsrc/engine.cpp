@@ -12,7 +12,7 @@
 
 using namespace fea::literals;
 
-namespace wsy {
+namespace wsay {
 struct async_token_imp {
 	voice vopts;
 	tts_voice tts;
@@ -67,7 +67,10 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 	speak_async(sentence, tok);
 
 	for (device_output& outv : tok._impl->device_outputs) {
-		outv->WaitUntilDone(INFINITE);
+		if (!SUCCEEDED(outv->WaitUntilDone(INFINITE))) {
+			fea::maybe_throw(
+					__FUNCTION__, __LINE__, "Couldn't wait on output speak.");
+		}
 	}
 }
 
@@ -82,18 +85,8 @@ async_token engine::make_async_token(const voice& v) {
 void engine::speak_async(const std::wstring& in_sentence, async_token& t) {
 	async_token_imp& tok = *t._impl;
 
-	std::wstring sentence;
-
-	// Setup extra xml tags.
-	if (tok.vopts.pitch != 10_u8) {
-		int pitch = int(std::clamp(tok.vopts.pitch, 0_u8, 20_u8));
-		pitch -= 10;
-		assert(pitch >= -10 && pitch <= 10);
-		sentence = std::format(L"<pitch absmiddle=\"{}\">{}</pitch>",
-				std::to_wstring(pitch), in_sentence);
-	} else {
-		sentence = in_sentence;
-	}
+	// Adds SAPI xml options to the sentence, if required.
+	std::wstring sentence = tok.tts.format_sentence(in_sentence);
 
 	// Clear the currently playing stream.
 	{
@@ -104,7 +97,10 @@ void engine::speak_async(const std::wstring& in_sentence, async_token& t) {
 		}
 
 		// Clear.
-		tok.tts.data_stream->SetSize({ 0 });
+		if (!SUCCEEDED(tok.tts.data_stream->SetSize({ 0 }))) {
+			fea::maybe_throw(__FUNCTION__, __LINE__,
+					"Couldn't set tts data stream size to 0.");
+		}
 	}
 
 	// Fill the stream with tts.
@@ -114,14 +110,27 @@ void engine::speak_async(const std::wstring& in_sentence, async_token& t) {
 		fea::maybe_throw<std::invalid_argument>(
 				__FUNCTION__, __LINE__, "Tts voice couldn't speak.");
 	}
-	tok.tts->WaitUntilDone(INFINITE);
+	if (!SUCCEEDED(tok.tts->WaitUntilDone(INFINITE))) {
+		fea::maybe_throw(
+				__FUNCTION__, __LINE__, "Couldn't wait on input speak.");
+	}
 
 	process_fx(tok.vopts, tok.tts.data_stream, imp().scratch_buffer,
 			imp().scratch_samples);
 
 	// Clone the input stream to output streams. They have an independent
 	// playhead but same data.
-	clone_input_stream(tok.tts, tok.device_outputs);
+	for (device_output& outv : tok.device_outputs) {
+		if (outv.data_stream_clone == nullptr) {
+			clone_input_stream(tok.tts, tok.device_outputs);
+		} else {
+			// Already cloned, reset output stream to beginning.
+			if (!SUCCEEDED(IStream_Reset(outv.data_stream_clone))) {
+				fea::maybe_throw(__FUNCTION__, __LINE__,
+						"Couldn't reset output stream playhead.");
+			}
+		}
+	}
 
 	// Play the stream on all output devices.
 	for (device_output& outv : tok.device_outputs) {
@@ -136,11 +145,31 @@ void engine::speak_async(const std::wstring& in_sentence, async_token& t) {
 void engine::stop(async_token& t) {
 	async_token_imp& tok = *t._impl;
 
+	// Stop input voice.
+	if (!SUCCEEDED(tok.tts->Speak(L"",
+				SPF_DEFAULT | SPF_ASYNC | SPF_PURGEBEFORESPEAK, nullptr))) {
+		fea::maybe_throw<std::invalid_argument>(
+				__FUNCTION__, __LINE__, "Input couldn't stop.");
+	}
+	if (!SUCCEEDED(tok.tts->WaitUntilDone(INFINITE))) {
+		fea::maybe_throw(
+				__FUNCTION__, __LINE__, "Couldn't wait on input speak.");
+	}
+
+	// Stop outputs.
 	for (device_output& outv : tok.device_outputs) {
 		if (!SUCCEEDED(outv->Speak(L"",
 					SPF_DEFAULT | SPF_ASYNC | SPF_PURGEBEFORESPEAK, nullptr))) {
 			fea::maybe_throw<std::runtime_error>(
-					__FUNCTION__, __LINE__, "Couldn't speak output stream.");
+					__FUNCTION__, __LINE__, "Output couldn't stop.");
+		}
+	}
+
+	// Wait on purge.
+	for (device_output& outv : tok.device_outputs) {
+		if (!SUCCEEDED(outv->WaitUntilDone(INFINITE))) {
+			fea::maybe_throw(
+					__FUNCTION__, __LINE__, "Couldn't wait on output speak.");
 		}
 	}
 }
@@ -152,4 +181,4 @@ engine_imp& engine::imp() {
 	return *_impl;
 }
 
-} // namespace wsy
+} // namespace wsay

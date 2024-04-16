@@ -107,12 +107,19 @@ wsay "Low voice." --pitch 0
 wsay "Normal voice." --pitch 10
 wsay "High voice." --pitch 20
 
+# If speaking code or text with special characters, you can disable speech xml parsing.
+wsay "<html>Definitely Facebook</html>" --nospeechxml
+
 # Degrade the sound to give a CB / radio feel. Multiple effects are provided.
 wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio 1
 wsay "3 3 3 Lima Delta, if able input 7 7 0 0 into your transponder." --fxradio 6
 
-# If speaking code or text with special characters, you can disable speech xml parsing.
-wsay "<html>Definitely Facebook</html>" --nospeechxml
+# Without white-noise.
+wsay "3 3 3 Lima Delta, do you know how to operate the transponder?" --fxradio 2 --fxradio_nonoise
+
+# Longer or shorter pauses between paragraphs. Use milliseconds.
+(echo "No" & echo."pause.") | wsay --paragraph_pause 0
+(echo "Long" & echo."pause.") | wsay --paragraph_pause 1000
 
 # Here, we are using voice 6, reading text from a file and outputting to 'output.wav'.
 wsay -v 6 -i mix_and_match_options.txt -o output.wav
@@ -134,28 +141,31 @@ Arguments:
 
 Options:
  -c, --clipboard                   Speak currently copied text (the text in your clipboard).
-     --fxradio <value>             Degrades audio to make it sound like a radio.
-                                   Supported values : 1 to 6.
  -i, --input_text <value>          Play text from '.txt' file. Supports speech xml.
  -I, --interactive                 Enter interactive mode. Type sentences, they will be spoken when you press enter.
                                    Use 'ctrl+c' or type '!exit' to quit.
  -d, --list_devices                List detected playback devices.
  -l, --list_voices                 Lists available voices.
- -X, --nospeechxml                 Disable speech xml detection. Use this if the text contains special characters that
-                                   aren't speech xml.
  -o, --output_file <optional>      Outputs to wav file. Uses 'out.wav' if no filename is provided.
  -P, --pitch <value>               Sets the voice pitch, from 0 to 20. 10 is the default pitch.
  -p, --playback_device <multiple>  Specify a playback device. Use the number provided by --list_devices.
-                                   You can provide more than 1 playback device, seperate the numbers with spaces. You
-                                   can also mix output to file + playback.
+                                   You can provide more than one playback device, seperate the numbers with spaces.
                                    Use 'all' to select all devices.
  -s, --speed <value>               Sets the voice speed, from 0 to 100. 50 is the default speed.
  -v, --voice <value>               Choose a different voice. Use the voice number printed using --list_voices.
  -V, --volume <value>              Sets the voice volume, from 0 to 100.
  -h, --help                        Print this help
 
+Extra Options:
+     --fxradio <value>             Degrades audio to make it sound like a radio, from 1 to 6.
+     --fxradio_nonoise             Disables background noise when using --fxradio.
+     --nospeechxml                 Disable speech xml detection. Use this if the text contains special characters that
+                                   aren't speech xml.
+     --paragraph_pause <value>     Sets the amount of pause time between paragraphs (in milliseconds), from 0 to *a big
+                                   number*.
+
 wsay
-version 1.6.1
+version 1.6.2
 https://github.com/p-groarke/wsay/releases
 Philippe Groarke <hello@philippegroarke.com>
 ```
