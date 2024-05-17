@@ -417,48 +417,6 @@ wsay::device_output make_device_output(const voice_output& vout,
 	return ret;
 }
 
-void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
-		const std::vector<CComPtr<ISpObjectToken>>& device_tokens,
-		const std::vector<std::wstring>& device_names, const voice& vopts,
-		tts_voice& tts, std::vector<device_output>& device_outputs) {
-	// Error checking.
-	if (vopts.voice_idx >= voice_tokens.size()) {
-		fea::maybe_throw<std::invalid_argument>(
-				__FUNCTION__, __LINE__, "Invalid voice index.");
-	}
-
-	for (const voice_output& vout : vopts.outputs()) {
-		if (vout.type == output_type_e::device
-				&& vout.device_idx >= device_tokens.size()) {
-			fea::maybe_throw<std::invalid_argument>(
-					__FUNCTION__, __LINE__, "Invalid device index.");
-		}
-
-		if (vout.type == output_type_e::file && vout.file_path.empty()) {
-			fea::maybe_throw<std::invalid_argument>(
-					__FUNCTION__, __LINE__, "Empty file path.");
-		}
-	}
-
-	// The voice that will do the tts, outputs to ispstream.
-	// Other voices will play stream to various outputs.
-	tts = make_tts_voice(vopts, voice_tokens);
-
-	// Create output voices. Either devices or output files.
-	for (const voice_output& vout : vopts.outputs()) {
-		device_outputs.push_back(make_device_output(vout, device_tokens));
-	}
-
-	// Make a default voice if we have no outputs.
-	if (device_outputs.empty()) {
-		voice_output vout;
-		vout.type = output_type_e::device;
-		vout.device_idx = default_output_device_idx(device_names);
-
-		device_outputs.push_back(make_device_output(vout, device_tokens));
-	}
-}
-
 void clone_input_stream(
 		const tts_voice& tts, std::vector<device_output>& device_outputs) {
 	GUID fmt_guid{};
