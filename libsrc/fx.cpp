@@ -3,8 +3,8 @@
 #include <cmath>
 #include <cstdint>
 #include <fea/meta/static_for.hpp>
+#include <fea/performance/intrinsics.hpp>
 #include <fea/utils/error.hpp>
-#include <fea/utils/intrinsics.hpp>
 #include <numbers>
 #include <random>
 #include <span>
@@ -49,7 +49,8 @@ void bit_depth_type_rt(Func&& func, bit_depth_e bit_depth) {
 }
 
 template <size_t BitDepth>
-[[nodiscard]] float bit_crush(float sample) {
+[[nodiscard]]
+float bit_crush(float sample) {
 	constexpr float bit_mul
 			= float(fea::make_bitmask<uint32_t, (BitDepth - 1)>());
 	constexpr float bit_div = 1.f / bit_mul;
@@ -58,14 +59,16 @@ template <size_t BitDepth>
 }
 
 template <float Drive>
-[[nodiscard]] float distortion_norm() {
+[[nodiscard]]
+float distortion_norm() {
 	static_assert(Drive >= 0.f && Drive <= 1.f, "Invalid drive.");
 	constexpr float d = Drive * 100.f;
 	return 1.f / (std::atanf(d));
 }
 
 template <float Drive>
-[[nodiscard]] float distort(float norm, float sample) {
+[[nodiscard]]
+float distort(float norm, float sample) {
 	static_assert(Drive >= 0.f && Drive <= 1.f, "Invalid drive.");
 	constexpr float d = Drive * 100.f;
 	constexpr float atten = (1.f - (Drive * Drive + (0.9f - Drive)));
@@ -77,7 +80,8 @@ template <float Drive>
 }
 
 template <float Vol>
-[[nodiscard]] float white_noise(float global_vol, float sample) {
+[[nodiscard]]
+float white_noise(float global_vol, float sample) {
 	static_assert(Vol >= 0.f && Vol <= 1.f, "Invalid volume.");
 	static std::random_device rd;
 	static std::mt19937 gen{ rd() };
@@ -97,12 +101,14 @@ struct biquad_state {
 
 template <biquad_args Args>
 	requires(Args.type == biquad_type_e::count)
-[[nodiscard]] float biquad(float sample, biquad_state&) {
+[[nodiscard]]
+float biquad(float sample, biquad_state&) {
 	return sample;
 }
 template <biquad_args Args>
 	requires(Args.type != biquad_type_e::count)
-[[nodiscard]] float biquad(float sample, biquad_state& state) {
+[[nodiscard]]
+float biquad(float sample, biquad_state& state) {
 	static_assert(
 			Args.type != biquad_type_e::count, "Should never end up here.");
 

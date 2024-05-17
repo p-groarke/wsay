@@ -8,7 +8,6 @@
 #include <fea/numerics/literals.hpp>
 #include <fea/string/string.hpp>
 #include <fea/utils/error.hpp>
-#include <fea/utils/regex.hpp>
 #include <fea/utils/throw.hpp>
 #include <format>
 #include <iostream>
@@ -149,7 +148,7 @@ SPSTREAMFORMAT to_spstreamformat(const voice& vopts) {
 			vopts.compression(), vopts.bit_depth(), vopts.sampling_rate());
 }
 
-std::vector<ATL::CComPtr<ISpObjectToken>> make_voice_tokens() {
+std::vector<CComPtr<ISpObjectToken>> make_voice_tokens() {
 	constexpr std::wstring_view win10_regkey
 			= L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_"
 			  L"OneCore\\Voices";
@@ -185,7 +184,7 @@ std::vector<ATL::CComPtr<ISpObjectToken>> make_voice_tokens() {
 	return ret;
 }
 
-std::vector<ATL::CComPtr<ISpObjectToken>> make_device_tokens() {
+std::vector<CComPtr<ISpObjectToken>> make_device_tokens() {
 	std::vector<CComPtr<ISpObjectToken>> ret;
 	CComPtr<IEnumSpObjectTokens> cpEnum;
 
@@ -195,6 +194,14 @@ std::vector<ATL::CComPtr<ISpObjectToken>> make_device_tokens() {
 
 	unsigned long device_count = 0;
 	if (!SUCCEEDED(cpEnum->GetCount(&device_count))) {
+		return ret;
+	}
+
+	if (device_count == 0) {
+		std::wcout << L"Warning : Audio devices not found, playback "
+					  "disabled.\n"
+					  "If you do have a working audio device, this may "
+					  "indicate a permissions issue.\n";
 		return ret;
 	}
 
@@ -388,7 +395,8 @@ wsay::device_output make_device_output(const voice_output& vout,
 		if (!SUCCEEDED(SPBindToFile(vout.file_path.c_str(), SPFM_CREATE_ALWAYS,
 					&ret.file_stream, &audio_fmt.FormatId(),
 					audio_fmt.WaveFormatExPtr()))) {
-			throw std::runtime_error{ "Couldn't bind voice to file." };
+			fea::maybe_throw<std::runtime_error>(
+					__FUNCTION__, __LINE__, "Couldn't bind voice to file.");
 		}
 
 		if (!SUCCEEDED(ret.voice.CoCreateInstance(CLSID_SpVoice))) {
@@ -407,48 +415,6 @@ wsay::device_output make_device_output(const voice_output& vout,
 	}
 
 	return ret;
-}
-
-void make_everything(const std::vector<CComPtr<ISpObjectToken>>& voice_tokens,
-		const std::vector<CComPtr<ISpObjectToken>>& device_tokens,
-		const std::vector<std::wstring>& device_names, const voice& vopts,
-		tts_voice& tts, std::vector<device_output>& device_outputs) {
-	// Error checking.
-	if (vopts.voice_idx >= voice_tokens.size()) {
-		fea::maybe_throw<std::invalid_argument>(
-				__FUNCTION__, __LINE__, "Invalid voice index.");
-	}
-
-	for (const voice_output& vout : vopts.outputs()) {
-		if (vout.type == output_type_e::device
-				&& vout.device_idx >= device_tokens.size()) {
-			fea::maybe_throw<std::invalid_argument>(
-					__FUNCTION__, __LINE__, "Invalid device index.");
-		}
-
-		if (vout.type == output_type_e::file && vout.file_path.empty()) {
-			fea::maybe_throw<std::invalid_argument>(
-					__FUNCTION__, __LINE__, "Empty file path.");
-		}
-	}
-
-	// The voice that will do the tts, outputs to ispstream.
-	// Other voices will play stream to various outputs.
-	tts = make_tts_voice(vopts, voice_tokens);
-
-	// Create output voices. Either devices or output files.
-	for (const voice_output& vout : vopts.outputs()) {
-		device_outputs.push_back(make_device_output(vout, device_tokens));
-	}
-
-	// Make a default voice if we have no outputs.
-	if (device_outputs.empty()) {
-		voice_output vout;
-		vout.type = output_type_e::device;
-		vout.device_idx = default_output_device_idx(device_names);
-
-		device_outputs.push_back(make_device_output(vout, device_tokens));
-	}
 }
 
 void clone_input_stream(

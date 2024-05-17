@@ -30,6 +30,9 @@ fea_import_clangformat()
 # Use fea gitignore file.
 fea_import_gitignore()
 
+# Use fea gitattribute file.
+fea_import_gitattributes()
+
 # Output to predictable location.
 fea_set_output_dir(${CMAKE_BINARY_DIR}/bin)
 

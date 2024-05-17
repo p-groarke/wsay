@@ -74,11 +74,56 @@ void engine::speak(const voice& vopts, const std::wstring& sentence) {
 	}
 }
 
-async_token engine::make_async_token(const voice& v) {
+async_token engine::make_async_token(const voice& in_vopts) const {
 	async_token ret;
-	ret._impl->vopts = v;
-	make_everything(imp().voice_tokens, imp().device_tokens, imp().device_names,
-			v, ret._impl->tts, ret._impl->device_outputs);
+	ret._impl->vopts = in_vopts;
+
+	// Error checking.
+	if (ret._impl->vopts.voice_idx >= imp().voice_tokens.size()) {
+		fea::maybe_throw<std::invalid_argument>(
+				__FUNCTION__, __LINE__, "Invalid voice index.");
+	}
+
+	for (const voice_output& vout : ret._impl->vopts.outputs()) {
+		if (vout.type == output_type_e::device
+				&& vout.device_idx >= imp().device_tokens.size()) {
+			fea::maybe_throw<std::invalid_argument>(
+					__FUNCTION__, __LINE__, "Invalid device index.");
+		}
+
+		if (vout.type == output_type_e::file && vout.file_path.empty()) {
+			fea::maybe_throw<std::invalid_argument>(
+					__FUNCTION__, __LINE__, "Empty file path.");
+		}
+	}
+
+	// The voice that will do the tts, outputs to ispstream.
+	// Other voices will play stream to various outputs.
+	ret._impl->tts = make_tts_voice(ret._impl->vopts, imp().voice_tokens);
+
+	// Create output voices. Either devices or output files.
+	for (const voice_output& vout : ret._impl->vopts.outputs()) {
+		ret._impl->device_outputs.push_back(
+				make_device_output(vout, imp().device_tokens));
+	}
+
+	// Make a default voice if we have no outputs.
+	if (ret._impl->device_outputs.empty()) {
+		if (imp().device_tokens.empty()) {
+			assert(imp().device_names.empty());
+			fea::maybe_throw<std::runtime_error>(__FUNCTION__, __LINE__,
+					"Trying to use default playback device, but no devices "
+					"exist. Aborting.");
+		}
+
+		voice_output vout;
+		vout.type = output_type_e::device;
+		vout.device_idx = default_output_device_idx(imp().device_names);
+
+		ret._impl->device_outputs.push_back(
+				make_device_output(vout, imp().device_tokens));
+	}
+
 	return ret;
 }
 
