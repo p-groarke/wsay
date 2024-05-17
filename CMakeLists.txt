@@ -102,7 +102,7 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libinclude/wsay" DESTINATION "${C
 
 # wsay
 file(GLOB_RECURSE CMDTOOL_SOURCES
-		"src/*.cpp" "src/*.c" "src/*.hpp" "src/*.h" "src/*.tpp"
+		"src/*.cpp" "src/*.c" "src/*.hpp" "src/*.h" "src/*.tpp" "resources/*.rc"
 )
 add_executable(${PROJECT_NAME} ${CMDTOOL_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src) # For based paths.
