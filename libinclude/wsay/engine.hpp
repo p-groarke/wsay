@@ -73,7 +73,7 @@ struct engine : fea::pimpl_ptr<engine_imp> {
 	// You need an async token to use async calls.
 	// This token should be used in all consecutive async calls of a specific
 	// voice.
-	async_token make_async_token(const voice& v);
+	async_token make_async_token(const voice& v) const;
 
 	// Speaks the sentence using selected voice to playback outputs and file.
 	// Non-blocking.

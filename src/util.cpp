@@ -1,7 +1,7 @@
 #include "private_include/util.hpp"
 
 #include <fea/string/string.hpp>
-#include <fea/terminal/utf8.hpp>
+#include <fea/terminal/utf8_io.hpp>
 #include <fea/utils/error.hpp>
 #include <fea/utils/file.hpp>
 #include <fea/utils/scope.hpp>
@@ -19,9 +19,8 @@ bool parse_text_file(
 	}
 
 	if (path.extension() != ".txt") {
-		fwprintf(stderr,
-				L"Text option only supports '.txt' "
-				"files.\n");
+		fwprintf(stderr, L"Text option only supports '.txt' "
+						 "files.\n");
 		return false;
 	}
 
@@ -34,9 +33,8 @@ bool parse_text_file(
 	out_text = fea::utf32_to_utf16_w(text);
 
 	if (out_text.empty()) {
-		fwprintf(stderr,
-				L"Couldn't parse text file or there is no "
-				"text in file.\n");
+		fwprintf(stderr, L"Couldn't parse text file or there is no "
+						 "text in file.\n");
 		return false;
 	}
 

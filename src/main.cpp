@@ -2,7 +2,7 @@
 
 #include <fea/getopt/getopt.hpp>
 #include <fea/terminal/pipe.hpp>
-#include <fea/terminal/utf8.hpp>
+#include <fea/terminal/utf8_io.hpp>
 #include <filesystem>
 #include <format>
 #include <iostream>
@@ -15,7 +15,7 @@ const std::wstring shutup_cmd = L"!stop";
 
 int wmain(int argc, wchar_t** argv, wchar_t**) {
 	fea::fast_iostreams();
-	auto on_exit_reset_term = fea::utf8_terminal(true);
+	auto on_exit_reset_term = fea::utf8_io(true);
 
 	wsay::engine engine;
 	wsay::voice voice;
